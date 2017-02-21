@@ -1,4 +1,4 @@
-package elasticshell
+package app
 
 // Config for elasticshell Application
 type Config struct {

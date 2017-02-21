@@ -1,4 +1,4 @@
-package elasticshell
+package app
 
 import (
 	"fmt"
@@ -52,7 +52,7 @@ func (app *Application) HandleCli(method string, url string, body string) error 
 func (app *Application) initInteractive() {
 	app.repl, _ = readline.NewEx(
 		&readline.Config{
-			Prompt:          "\x1b[34mElasticsearch-cli> \x1b[0m",
+			Prompt:          "\x1b[34melasticsearch> \x1b[0m",
 			InterruptPrompt: "^C",
 			EOFPrompt:       "exit",
 			AutoComplete:    cli.Completer,
