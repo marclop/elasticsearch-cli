@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/elastic/elasticsearch-cli/app"
 	"github.com/elastic/elasticsearch-cli/cli"
 	"github.com/elastic/elasticsearch-cli/client"
-	"github.com/elastic/elasticsearch-cli/elasticshell"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 	if len(args) == 1 && args[0] == "version" {
-		fmt.Printf("Elasticsearch-cli v%s\n", elasticshell.GetVersion())
+		fmt.Printf("Elasticsearch CLI v%s\n", app.GetVersion())
 		return
 	}
 
@@ -34,15 +34,15 @@ func main() {
 	}
 
 	// TODO: Reenable poll for index auto discovery
-	elasticShellConfig := elasticshell.NewApplicationConfig(*verboseFlag, 5)
-	elasticShell := elasticshell.Init(elasticShellConfig, client, parser)
+	appConfig := app.NewApplicationConfig(*verboseFlag, 5)
+	app := app.Init(appConfig, client, parser)
 
 	if len(args) > 0 {
-		err := elasticShell.HandleCli(parser.Method(), parser.URL(), parser.Body())
+		err := app.HandleCli(parser.Method(), parser.URL(), parser.Body())
 		if err != nil {
 			fmt.Println(err)
 		}
 	} else {
-		elasticShell.Interactive()
+		app.Interactive()
 	}
 }
