@@ -39,7 +39,7 @@ func main() {
 		log.Fatalf("[ERROR]: %s", err)
 	}
 
-	indicesChannel := make(chan []string)
+	indicesChannel := make(chan []string, 1)
 	poller := poller.NewIndexPoller(client, indicesChannel, *pollFlag)
 	appConfig := app.NewApplicationConfig(*verboseFlag, *pollFlag)
 	app := app.Init(appConfig, client, parser, indicesChannel, poller)
