@@ -17,10 +17,9 @@ var supportedMethods = []string{
 }
 
 type Parser struct {
-	interactive bool
-	method      string
-	url         string
-	body        string
+	method string
+	url    string
+	body   string
 }
 
 type ParserInterface interface {
@@ -30,19 +29,22 @@ type ParserInterface interface {
 	Body() string
 }
 
-// NewParser returns a new *Parser and validates the input
-func NewParser(input []string) (*Parser, error) {
+// NewParser initializes the parser and validates the input
+func NewParser(input []string) (ParserInterface, error) {
 	url := "/"
 	body := ""
 	method := "GET"
 
-	if len(input) == 1 {
-		method = input[0]
+	if len(input) == 0 {
+		return nil, nil
 	}
 
+	method = strings.ToUpper(input[0])
+
 	if len(input) > 1 {
-		url = input[1]
+		url = strings.ToLower(input[1])
 	}
+
 	if len(input) == 3 {
 		body = input[2]
 	}
@@ -55,19 +57,9 @@ func NewParser(input []string) (*Parser, error) {
 	return p, p.Validate()
 }
 
-// NewIteractiveParser just returns a new *Parser, skips input validation
-func NewIteractiveParser(line string) (*Parser, error) {
-	p, err := NewParser(strings.Fields(line))
-	if err != nil {
-		return nil, err
-	}
-
-	p.interactive = true
-	return p, nil
-}
-
 //TODO: Use Hashicorp multierror
 
+// Validate makes sure that the parsed method and URL are valid
 func (p *Parser) Validate() error {
 	if !utils.StringInSlice(p.method, supportedMethods) {
 		return fmt.Errorf("method \"%s\" is not supported", p.method)
@@ -85,14 +77,17 @@ func (p *Parser) ensureURLIsPrefixed() {
 	}
 }
 
+// Method returns the parsed Method in uppercase
 func (p *Parser) Method() string {
 	return p.method
 }
 
+// URL returns the parsed URL in in lowercase
 func (p *Parser) URL() string {
 	return p.url
 }
 
+// Body returns the parsed request body
 func (p *Parser) Body() string {
 	return p.body
 }

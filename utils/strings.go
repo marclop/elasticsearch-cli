@@ -5,6 +5,8 @@ import (
 	"io"
 )
 
+// StringInSlice checks if the string is present
+// in the slice
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
@@ -14,8 +16,20 @@ func StringInSlice(a string, list []string) bool {
 	return false
 }
 
+// ReaderToString returns the contents of the
+// io.Reader stringified
 func ReaderToString(reader io.Reader) string {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(reader)
 	return buf.String()
+}
+
+// ConcatStrings provides a more performant way
+// of concatenating strings than +
+func ConcatStrings(strs ...string) string {
+	var concatbuffer bytes.Buffer
+	for _, str := range strs {
+		concatbuffer.WriteString(str)
+	}
+	return concatbuffer.String()
 }

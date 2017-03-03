@@ -9,7 +9,7 @@ import (
 
 type ClientInterface interface {
 	HandleCall(string, string, string) (*http.Response, error)
-	SetHost(string)
+	SetHost(string) error
 	SetPort(int)
 	SetUser(string)
 	SetPass(string)
@@ -42,7 +42,7 @@ func (c *Client) HandleCall(method string, url string, body string) (*http.Respo
 		bodyIoReader = strings.NewReader(body)
 	}
 
-	req, err := c.createRequest(method, c.getFullUrl(url), bodyIoReader)
+	req, err := c.createRequest(method, c.getFullURL(url), bodyIoReader)
 	if err != nil {
 		return nil, err
 	}
@@ -67,22 +67,26 @@ func (c *Client) createRequest(method string, url string, body io.Reader) (*http
 	return req, nil
 }
 
-func (c *Client) getFullUrl(url string) string {
+func (c *Client) getFullURL(url string) string {
 	return fmt.Sprintf("%s%s", c.config.HttpAddress(), url)
 }
 
-func (c *Client) SetHost(value string) {
-	c.config.host = value
+// SetHost modifies the target host
+func (c *Client) SetHost(value string) error {
+	return c.config.SetHost(value)
 }
 
+// SetPort modifies the target port
 func (c *Client) SetPort(value int) {
-	c.config.port = value
+	c.config.SetPort(value)
 }
 
+// SetUser modifies the user (HTTP Basic Auth)
 func (c *Client) SetUser(value string) {
 	c.config.user = value
 }
 
+// SetPass modifies the password (HTTP Basic Auth)
 func (c *Client) SetPass(value string) {
 	c.config.pass = value
 }

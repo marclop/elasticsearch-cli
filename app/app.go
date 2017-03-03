@@ -1,32 +1,37 @@
 package app
 
 import (
-	"fmt"
 	"io"
+	"log"
 	"strconv"
 	"strings"
 
 	"github.com/chzyer/readline"
 	"github.com/elastic/elasticsearch-cli/cli"
 	"github.com/elastic/elasticsearch-cli/client"
+	"github.com/elastic/elasticsearch-cli/poller"
 )
 
 // Application contains the full application and its dependencies
 type Application struct {
-	config    *Config
-	client    client.ClientInterface
-	formatter cli.FormatterInterface
-	parser    cli.ParserInterface
-	repl      *readline.Instance
+	config       *Config
+	client       client.ClientInterface
+	formatter    cli.FormatterInterface
+	indexChannel chan []string
+	parser       cli.ParserInterface
+	poller       poller.PollerInterface
+	repl         *readline.Instance
 }
 
 // Init ties all the application pieces together and returns a conveninent *Application struct
 // that allows easy interaction with all the pieces of the application
-func Init(config *Config, client client.ClientInterface, parser cli.ParserInterface) *Application {
+func Init(config *Config, client client.ClientInterface, parser cli.ParserInterface, c chan []string, w poller.PollerInterface) *Application {
 	return &Application{
-		config: config,
-		client: client,
-		parser: parser,
+		config:       config,
+		client:       client,
+		parser:       parser,
+		indexChannel: c,
+		poller:       w,
 	}
 }
 
@@ -39,17 +44,19 @@ func (app *Application) HandleCli(method string, url string, body string) error 
 	}
 	defer res.Body.Close()
 
-	if app.config.interactive {
+	if app.repl != nil {
 		app.formatter = cli.NewIteractiveJSONFormatter(res)
 	} else {
 		app.formatter = cli.NewJSONFormatter(res)
 	}
 
 	app.formatter.FormatJSON(app.config.verbose)
-	return nil
+	return err
 }
 
 func (app *Application) initInteractive() {
+	go app.refreshCompleter()
+	go app.poller.Run()
 	app.repl, _ = readline.NewEx(
 		&readline.Config{
 			Prompt:          "\x1b[34melasticsearch> \x1b[0m",
@@ -59,7 +66,13 @@ func (app *Application) initInteractive() {
 			HistoryFile:     "/tmp/elasticsearch-cli.history",
 		},
 	)
-	app.config.interactive = true
+}
+
+func (app *Application) refreshCompleter() {
+	for {
+		indices := <-app.indexChannel
+		app.repl.Config.AutoComplete = cli.AssembleIndexCompleter(indices)
+	}
 }
 
 // Interactive runs the application like a readline / REPL
@@ -86,49 +99,47 @@ func (app *Application) Interactive() {
 		if cleanLine == "exit" || cleanLine == "quit" {
 			return
 		}
-		lineSliced := strings.Fields(cleanLine)
 
-		// TODO: Split conditional hell
+		lineSliced := strings.Fields(cleanLine)
 		if lineSliced[0] == "set" {
-			if len(lineSliced) == 3 {
-				switch lineSliced[1] {
-				case "host":
-					if strings.HasSuffix(lineSliced[2], "http") {
-						app.client.SetHost(lineSliced[2])
-					} else {
-						fmt.Println(lineSliced[2], "does not contain a valid protocol scheme")
-					}
-				case "port":
-					port, err := strconv.Atoi(lineSliced[2])
-					if err != nil {
-						fmt.Println(lineSliced[2], "is not a valid port")
-						continue
-					}
-					app.client.SetPort(port)
-				case "user":
-					app.client.SetUser(lineSliced[2])
-				case "pass":
-					app.client.SetPass(lineSliced[2])
-				}
-				continue
-			} else if (len(lineSliced) == 2) && (lineSliced[1] == "verbose") {
-				app.config.verbose = true
-				continue
-			} else {
-				continue
-			}
-		} else {
-			app.parser, err = cli.NewIteractiveParser(cleanLine)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			app.parser.Validate()
+			app.doSetCommands(lineSliced)
+			continue
+		}
+
+		app.parser, err = cli.NewParser(lineSliced)
+		if err != nil {
+			log.Print("[ERROR]: ", err)
+			continue
 		}
 
 		err = app.HandleCli(app.parser.Method(), app.parser.URL(), app.parser.Body())
 		if err != nil {
-			fmt.Println(err)
+			log.Print("[ERROR]: ", err)
 		}
+
+	}
+}
+
+func (app *Application) doSetCommands(lineSliced []string) {
+	if len(lineSliced) == 3 {
+		switch lineSliced[1] {
+		case "host":
+			err := app.client.SetHost(lineSliced[2])
+			if err != nil {
+				log.Print("[ERROR]: ", err)
+			}
+		case "port":
+			port, err := strconv.Atoi(lineSliced[2])
+			if err != nil {
+				log.Print(lineSliced[2], "is not a valid port")
+			}
+			app.client.SetPort(port)
+		case "user":
+			app.client.SetUser(lineSliced[2])
+		case "pass":
+			app.client.SetPass(lineSliced[2])
+		}
+	} else if (len(lineSliced) == 2) && (lineSliced[1] == "verbose") {
+		app.config.verbose = true
 	}
 }
