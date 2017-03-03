@@ -71,14 +71,14 @@ func (c *Config) SetHeader(key string, value string) {
 	c.headers[key] = value
 }
 
-// HttpAddress returns the host and port combination so it can
+// HTTPAdress returns the host and port combination so it can
 // be used by the Client http://host:port
-func (c *Config) HttpAddress() string {
+func (c *Config) HTTPAdress() string {
 	return fmt.Sprintf("%s:%d", c.hostPort.Host, c.hostPort.Port)
 }
 
-// GetTimeout returns the configured HTTP timeout
-func (c *Config) GetTimeout() time.Duration {
+// Timeout returns the configured HTTP timeout
+func (c *Config) Timeout() time.Duration {
 	return c.timeout
 }
 

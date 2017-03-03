@@ -24,7 +24,7 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 	if len(args) == 1 && args[0] == "version" {
-		fmt.Printf("Elasticsearch CLI v%s\n", app.GetVersion())
+		fmt.Printf("Elasticsearch CLI v%s\n", app.Version())
 		return
 	}
 

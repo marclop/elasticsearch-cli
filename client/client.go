@@ -25,7 +25,7 @@ func NewClient(config *Config) *Client {
 	return &Client{
 		config: config,
 		client: &http.Client{
-			Timeout: config.GetTimeout(),
+			Timeout: config.Timeout(),
 		},
 	}
 }
@@ -42,7 +42,7 @@ func (c *Client) HandleCall(method string, url string, body string) (*http.Respo
 		bodyIoReader = strings.NewReader(body)
 	}
 
-	req, err := c.createRequest(method, c.getFullURL(url), bodyIoReader)
+	req, err := c.createRequest(method, c.fullURL(url), bodyIoReader)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +67,8 @@ func (c *Client) createRequest(method string, url string, body io.Reader) (*http
 	return req, nil
 }
 
-func (c *Client) getFullURL(url string) string {
-	return fmt.Sprintf("%s%s", c.config.HttpAddress(), url)
+func (c *Client) fullURL(url string) string {
+	return fmt.Sprintf("%s%s", c.config.HTTPAdress(), url)
 }
 
 // SetHost modifies the target host
