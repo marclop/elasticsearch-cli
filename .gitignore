@@ -2,3 +2,4 @@ bin
 vendor
 pkg
 .glide
+.vscode

@@ -37,7 +37,7 @@ ifeq ($(shell uname -m), x86_64)
 endif
 
 .PHONY: install
-install: docker-build _get_sys_arch
+install: build _get_sys_arch
 	@ echo "-> Moving binary to /usr/local/bin/$(BINARY)"
 	@ mv pkg/$(BINARY)_$(OS_NAME)_$(ARCH) /usr/local/bin/$(BINARY)
 

@@ -8,7 +8,7 @@
 * Interactive console-like execution
 * REPL autocompletion
 * Persistent history
-* User/password support
+* Authentication support
 
 # Installation
 
@@ -36,6 +36,8 @@ Usage of elasticsearch-cli:
     	Set the ElasticSearch host url (default "http://localhost")
   -pass string
     	Password for HTTP basic auth
+  -poll int
+    	Set the poll interval for index autodiscovery (default 10)
   -port int
     	Set the Elasticsearch Port (default 9200)
   -timeout int
@@ -224,10 +226,10 @@ $ elasticsearch-cli -port 9201 GET | jq '.name'
 
 # TODOs
 
+- [X] REPL Auto-discover indices
+- [X] Use logger
+- [ ] Test, test and test
+- [ ] Improve help Flag
+- [ ] Configuration files
 - [ ] CI
 - [ ] Bulk API
-- [ ] Better help Flag
-- [ ] REPL Auto-discover indices
-- [ ] Test, test and test
-- [ ] Use logger
-- [ ] Configuration files
