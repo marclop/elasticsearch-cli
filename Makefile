@@ -46,3 +46,12 @@ release: build
 	@ go get github.com/tcnksm/ghr
 	@ echo "-> Publishing $(BINARY) to GitHub..."
 	@ ghr -u elastic $(VERSION) pkg
+
+
+.PHONY: test
+test: unit
+
+.PHONY: unit
+unit:
+	@ echo "-> Running unit tests for $(BINARY)..."
+	@ go test -cover $(shell glide nv)

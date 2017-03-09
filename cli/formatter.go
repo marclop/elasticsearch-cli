@@ -9,32 +9,33 @@ import (
 	"strings"
 )
 
-type Formatter struct {
+type JSONFormatter struct {
 	input       *http.Response
 	interactive bool
 }
 
 type FormatterInterface interface {
-	FormatJSON(bool)
+	Format(bool)
 }
 
-//TODO: Revisit implementation
-
-func NewJSONFormatter(input *http.Response) *Formatter {
-	return &Formatter{
+// NewJSONFormatter initializes a JSON Formatter non interactive
+func NewJSONFormatter(input *http.Response) FormatterInterface {
+	return &JSONFormatter{
 		input:       input,
 		interactive: false,
 	}
 }
 
-func NewIteractiveJSONFormatter(input *http.Response) *Formatter {
-	return &Formatter{
+// NewIteractiveJSONFormatter initializes a JSON Formatter interactive
+func NewIteractiveJSONFormatter(input *http.Response) FormatterInterface {
+	return &JSONFormatter{
 		input:       input,
 		interactive: true,
 	}
 }
 
-func (f *Formatter) FormatJSON(verbose bool) {
+// Format formats the HTTPResponse to Stdout
+func (f *JSONFormatter) Format(verbose bool) {
 	content, _ := ioutil.ReadAll(f.input.Body)
 	var out bytes.Buffer
 	err := json.Indent(&out, content, "", "  ")
@@ -60,5 +61,4 @@ func (f *Formatter) FormatJSON(verbose bool) {
 		return
 	}
 	fmt.Println(strings.TrimSpace(out.String()))
-
 }

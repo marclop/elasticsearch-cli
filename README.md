@@ -228,7 +228,8 @@ $ elasticsearch-cli -port 9201 GET | jq '.name'
 
 - [X] REPL Auto-discover indices
 - [X] Use logger
-- [ ] Test, test and test
+- [X] Create Unit tests
+- [ ] Acceptance tests
 - [ ] Improve help Flag
 - [ ] Configuration files
 - [ ] CI

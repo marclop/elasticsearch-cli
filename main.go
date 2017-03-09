@@ -32,7 +32,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("[ERROR]: %s", err)
 	}
-	client := client.NewClient(clientConfig)
+	client := client.NewClient(clientConfig, nil)
 
 	parser, err := cli.NewParser(args)
 	if err != nil {

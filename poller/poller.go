@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"fmt"
+
 	"github.com/elastic/elasticsearch-cli/client"
 	"github.com/elastic/elasticsearch-cli/elasticsearch"
 	"github.com/elastic/elasticsearch-cli/utils"
@@ -20,16 +22,18 @@ type IndexPoller struct {
 	pollRate time.Duration
 }
 
-type PollerInterface interface {
+type Interface interface {
 	Run()
 }
 
+var defaultPollingEndpoint = "/_cat/indices"
+
 // NewIndexPoller is the factory to create a new IndexPoller
-func NewIndexPoller(client client.ClientInterface, c chan []string, poll int) PollerInterface {
+func NewIndexPoller(client client.ClientInterface, c chan []string, poll int) Interface {
 	return &IndexPoller{
 		channel:  c,
 		client:   client,
-		endpoint: "/_cat/indices",
+		endpoint: defaultPollingEndpoint,
 		pollRate: time.Duration(poll) * time.Second,
 	}
 }
@@ -38,21 +42,20 @@ func NewIndexPoller(client client.ClientInterface, c chan []string, poll int) Po
 // And will send the results back to the channel
 func (w *IndexPoller) Run() {
 	for {
-		w.run()
+		w.channel <- w.run()
 		time.Sleep(w.pollRate)
 	}
 }
 
-func (w *IndexPoller) run() {
+func (w *IndexPoller) run() []string {
 	res, err := w.client.HandleCall("GET", w.endpoint, "")
 	if err != nil {
 		log.Print("[ERROR]: ", err)
-		time.Sleep(w.pollRate / 2)
-		return
+		return nil
 	}
 	defer res.Body.Close()
 
-	w.channel <- w.parseIndices(res)
+	return w.parseIndices(res)
 }
 
 func (w *IndexPoller) parseIndices(res *http.Response) []string {
@@ -62,7 +65,7 @@ func (w *IndexPoller) parseIndices(res *http.Response) []string {
 		var indices elasticsearch.Indices
 		err := json.NewDecoder(res.Body).Decode(&indices)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 		for _, index := range indices {
 			indexList = append(indexList, index.Index)

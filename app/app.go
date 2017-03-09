@@ -19,13 +19,13 @@ type Application struct {
 	formatter    cli.FormatterInterface
 	indexChannel chan []string
 	parser       cli.ParserInterface
-	poller       poller.PollerInterface
+	poller       poller.Interface
 	repl         *readline.Instance
 }
 
 // Init ties all the application pieces together and returns a conveninent *Application struct
 // that allows easy interaction with all the pieces of the application
-func Init(config *Config, client client.ClientInterface, parser cli.ParserInterface, c chan []string, w poller.PollerInterface) *Application {
+func Init(config *Config, client client.ClientInterface, parser cli.ParserInterface, c chan []string, w poller.Interface) *Application {
 	return &Application{
 		config:       config,
 		client:       client,
@@ -50,7 +50,7 @@ func (app *Application) HandleCli(method string, url string, body string) error 
 		app.formatter = cli.NewJSONFormatter(res)
 	}
 
-	app.formatter.FormatJSON(app.config.verbose)
+	app.formatter.Format(app.config.verbose)
 	return err
 }
 

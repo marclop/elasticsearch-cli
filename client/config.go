@@ -1,9 +1,13 @@
 package client
 
-import "fmt"
-import "time"
-import "strings"
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/elastic/elasticsearch-cli/utils"
+)
 
 var defaultClientHeaders = map[string]string{
 	"Content-Type": "application/json",
@@ -23,19 +27,14 @@ type hostPort struct {
 }
 
 // NewClientConfig handles the parameters that will be used in the HTTP Client
+// If a socket is passed as a URL (http://<host>:<port>), the complex URL will prevail
+// from the passed port
 func NewClientConfig(host string, port int, user string, pass string, timeout int) (*Config, error) {
 	err := validateSchema(host)
 	if err != nil {
 		return nil, err
 	}
-	hp, err := newHostString(host)
-	if err != nil {
-		return nil, err
-	}
-
-	if hp.Port != port {
-		hp.Port = port
-	}
+	hp := newHostString(host)
 
 	return &Config{
 		hostPort: hp,
@@ -53,17 +52,14 @@ func validateSchema(host string) error {
 	return nil
 }
 
-func newHostString(host string) (*hostPort, error) {
+func newHostString(host string) *hostPort {
 	urlString := strings.Split(host, "/")[2]
 	if strings.Contains(urlString, ":") {
 		urlStringPort := strings.Split(urlString, ":")[1]
-		intedPort, err := strconv.Atoi(urlStringPort)
-		if err != nil {
-			return nil, fmt.Errorf("Invalid URL:Port combination, Port is not a string => %s", urlStringPort)
-		}
-		return &hostPort{strings.Join(strings.Split(host, ":")[0:2], ":"), intedPort}, nil
+		intedPort, _ := strconv.Atoi(urlStringPort)
+		return &hostPort{strings.Join(strings.Split(host, ":")[0:2], ":"), intedPort}
 	}
-	return &hostPort{strings.Join(strings.Split(host, ":")[0:2], ":"), 9200}, nil
+	return &hostPort{strings.Join(strings.Split(host, ":")[0:2], ":"), 9200}
 }
 
 // SetHeader that will be sent with the request
@@ -74,7 +70,7 @@ func (c *Config) SetHeader(key string, value string) {
 // HTTPAdress returns the host and port combination so it can
 // be used by the Client http://host:port
 func (c *Config) HTTPAdress() string {
-	return fmt.Sprintf("%s:%d", c.hostPort.Host, c.hostPort.Port)
+	return utils.ConcatStrings(c.hostPort.Host, ":", strconv.Itoa(c.hostPort.Port))
 }
 
 // Timeout returns the configured HTTP timeout
@@ -88,8 +84,8 @@ func (c *Config) SetHost(value string) error {
 	if err != nil {
 		return err
 	}
-	c.hostPort, err = newHostString(value)
-	return err
+	c.hostPort = newHostString(value)
+	return nil
 }
 
 // SetPort modifies the target port

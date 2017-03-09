@@ -70,6 +70,7 @@ var Completer = readline.NewPrefixCompleter(
 	setCompleter,
 )
 
+// AssembleIndexCompleter creates the autocompletion index for REPL
 func AssembleIndexCompleter(indices []string) readline.PrefixCompleterInterface {
 	var indexCompleterList []readline.PrefixCompleterInterface
 	var indexGetOperations []readline.PrefixCompleterInterface

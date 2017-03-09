@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 
@@ -54,10 +53,14 @@ func NewParser(input []string) (ParserInterface, error) {
 		url:    strings.ToLower(url),
 		body:   body,
 	}
-	return p, p.Validate()
-}
 
-//TODO: Use Hashicorp multierror
+	err := p.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
 
 // Validate makes sure that the parsed method and URL are valid
 func (p *Parser) Validate() error {
@@ -70,10 +73,7 @@ func (p *Parser) Validate() error {
 
 func (p *Parser) ensureURLIsPrefixed() {
 	if !strings.HasPrefix(p.url, "/") {
-		var buffer bytes.Buffer
-		buffer.WriteString("/")
-		buffer.WriteString(p.url)
-		p.url = buffer.String()
+		p.url = utils.ConcatStrings("/", p.url)
 	}
 }
 

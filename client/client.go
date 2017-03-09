@@ -1,10 +1,11 @@
 package client
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/elastic/elasticsearch-cli/utils"
 )
 
 type ClientInterface interface {
@@ -15,25 +16,31 @@ type ClientInterface interface {
 	SetPass(string)
 }
 
-type Client struct {
-	config  *Config
-	address string
-	client  *http.Client
+type CallerInterface interface {
+	Do(*http.Request) (*http.Response, error)
 }
 
-func NewClient(config *Config) *Client {
+type Client struct {
+	config *Config
+	caller CallerInterface
+}
+
+func NewClient(config *Config, client CallerInterface) ClientInterface {
+	if client == nil {
+		client = &http.Client{
+			Timeout: config.Timeout(),
+		}
+	}
 	return &Client{
 		config: config,
-		client: &http.Client{
-			Timeout: config.Timeout(),
-		},
+		caller: client,
 	}
 }
 
 // TODO: Bulk operations
 
 // HandleCall is responsible to perform HTTP requests against the secified url
-// it heavivly relies on the underlying net/http.Client.
+// it relies on the underlying net/http.Client or Injected CallerInterface.
 //
 // Because we have to inject the `Content-Type: application/json`, client.Do is used.
 func (c *Client) HandleCall(method string, url string, body string) (*http.Response, error) {
@@ -47,7 +54,7 @@ func (c *Client) HandleCall(method string, url string, body string) (*http.Respo
 		return nil, err
 	}
 
-	return c.client.Do(req)
+	return c.caller.Do(req)
 }
 
 func (c *Client) createRequest(method string, url string, body io.Reader) (*http.Request, error) {
@@ -68,7 +75,7 @@ func (c *Client) createRequest(method string, url string, body io.Reader) (*http
 }
 
 func (c *Client) fullURL(url string) string {
-	return fmt.Sprintf("%s%s", c.config.HTTPAdress(), url)
+	return utils.ConcatStrings(c.config.HTTPAdress(), url)
 }
 
 // SetHost modifies the target host
