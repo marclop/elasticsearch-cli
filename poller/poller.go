@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"fmt"
-
 	"github.com/elastic/elasticsearch-cli/client"
 	"github.com/elastic/elasticsearch-cli/elasticsearch"
 	"github.com/elastic/elasticsearch-cli/utils"
@@ -65,7 +63,7 @@ func (w *IndexPoller) parseIndices(res *http.Response) []string {
 		var indices elasticsearch.Indices
 		err := json.NewDecoder(res.Body).Decode(&indices)
 		if err != nil {
-			fmt.Println(err)
+			log.Print("[ERROR]: ", err)
 		}
 		for _, index := range indices {
 			indexList = append(indexList, index.Index)
