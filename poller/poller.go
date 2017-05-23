@@ -14,20 +14,16 @@ import (
 
 // IndexPoller polls the ElasticSearch API to discover which indices exist
 type IndexPoller struct {
-	client   client.ClientInterface
+	client   client.Client
 	endpoint string
 	channel  chan []string
 	pollRate time.Duration
 }
 
-type Interface interface {
-	Run()
-}
-
 var defaultPollingEndpoint = "/_cat/indices"
 
 // NewIndexPoller is the factory to create a new IndexPoller
-func NewIndexPoller(client client.ClientInterface, c chan []string, poll int) Interface {
+func NewIndexPoller(client client.Client, c chan []string, poll int) *IndexPoller {
 	return &IndexPoller{
 		channel:  c,
 		client:   client,
@@ -36,7 +32,7 @@ func NewIndexPoller(client client.ClientInterface, c chan []string, poll int) In
 	}
 }
 
-// Run the IndexPoller indefinetly, which will get the cluster indexList
+// Run the IndexPoller indefinitely, which will get the cluster indexList
 // And will send the results back to the channel
 func (w *IndexPoller) Run() {
 	for {
@@ -72,7 +68,7 @@ func (w *IndexPoller) parseIndices(res *http.Response) []string {
 		return indexList
 	}
 
-	indicesRaw := strings.TrimSpace(utils.ReaderToString(res.Body))
+	indicesRaw := strings.TrimSpace(utils.ReadAllString(res.Body))
 	indexLines := strings.Split(indicesRaw, "\n")
 
 	for _, indexLine := range indexLines {

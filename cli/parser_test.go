@@ -5,14 +5,14 @@ import (
 	"testing"
 )
 
-func TestNewParser(t *testing.T) {
+func TestNewInputParser(t *testing.T) {
 	type args struct {
 		input []string
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    ParserInterface
+		want    *InputParser
 		wantErr bool
 	}{
 		{
@@ -24,7 +24,7 @@ func TestNewParser(t *testing.T) {
 					"",
 				},
 			},
-			&Parser{
+			&InputParser{
 				"GET",
 				"/",
 				"",
@@ -40,7 +40,7 @@ func TestNewParser(t *testing.T) {
 					"",
 				},
 			},
-			&Parser{
+			&InputParser{
 				"GET",
 				"/",
 				"",
@@ -82,7 +82,7 @@ func TestNewParser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewParser(tt.args.input)
+			got, err := NewInputParser(tt.args.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewParser() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -126,7 +126,7 @@ func TestParser_Validate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Parser{
+			p := &InputParser{
 				method: tt.fields.method,
 				url:    tt.fields.url,
 				body:   tt.fields.body,
@@ -153,7 +153,7 @@ func TestParser_Method(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Parser{
+			p := &InputParser{
 				method: tt.fields.method,
 				url:    tt.fields.url,
 				body:   tt.fields.body,
@@ -180,7 +180,7 @@ func TestParser_URL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Parser{
+			p := &InputParser{
 				method: tt.fields.method,
 				url:    tt.fields.url,
 				body:   tt.fields.body,
@@ -207,7 +207,7 @@ func TestParser_Body(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Parser{
+			p := &InputParser{
 				method: tt.fields.method,
 				url:    tt.fields.url,
 				body:   tt.fields.body,

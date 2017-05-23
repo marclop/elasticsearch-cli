@@ -11,6 +11,8 @@ import (
 	"github.com/elastic/elasticsearch-cli/poller"
 )
 
+var Version string
+
 func main() {
 	hostFlag := flag.String("host", "http://localhost", "Set the ElasticSearch host url")
 	portFlag := flag.Int("port", 9200, "Set the Elasticsearch Port")
@@ -19,12 +21,11 @@ func main() {
 	timeoutFlag := flag.Int("timeout", 10, "Set the HTTP client timeout")
 	pollFlag := flag.Int("poll", 10, "Set the poll interval for index autodiscovery")
 	verboseFlag := flag.Bool("verbose", false, "Verbose request/response information")
-	// helpFlag := flag.Bool("-help", false, "Prints this message")
 
 	flag.Parse()
 	args := flag.Args()
 	if len(args) == 1 && args[0] == "version" {
-		fmt.Printf("Elasticsearch CLI v%s\n", app.Version())
+		fmt.Printf("Elasticsearch CLI v%s\n", Version)
 		return
 	}
 
@@ -32,9 +33,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("[ERROR]: %s", err)
 	}
-	client := client.NewClient(clientConfig, nil)
+	client := client.NewHTTPClient(clientConfig, nil)
 
-	parser, err := cli.NewParser(args)
+	parser, err := cli.NewInputParser(args)
 	if err != nil {
 		log.Fatalf("[ERROR]: %s", err)
 	}

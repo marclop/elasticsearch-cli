@@ -34,7 +34,7 @@ func NewClientConfig(host string, port int, user string, pass string, timeout in
 	if err != nil {
 		return nil, err
 	}
-	hp := newHostString(host)
+	hp := newHostPortString(host, port)
 
 	return &Config{
 		hostPort: hp,
@@ -52,14 +52,14 @@ func validateSchema(host string) error {
 	return nil
 }
 
-func newHostString(host string) *hostPort {
+func newHostPortString(host string, port int) *hostPort {
 	urlString := strings.Split(host, "/")[2]
 	if strings.Contains(urlString, ":") {
 		urlStringPort := strings.Split(urlString, ":")[1]
 		intedPort, _ := strconv.Atoi(urlStringPort)
 		return &hostPort{strings.Join(strings.Split(host, ":")[0:2], ":"), intedPort}
 	}
-	return &hostPort{strings.Join(strings.Split(host, ":")[0:2], ":"), 9200}
+	return &hostPort{strings.Join(strings.Split(host, ":")[0:2], ":"), port}
 }
 
 // SetHeader that will be sent with the request
@@ -84,7 +84,7 @@ func (c *Config) SetHost(value string) error {
 	if err != nil {
 		return err
 	}
-	c.hostPort = newHostString(value)
+	c.hostPort = newHostPortString(value, c.hostPort.Port)
 	return nil
 }
 

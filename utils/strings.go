@@ -16,9 +16,9 @@ func StringInSlice(a string, list []string) bool {
 	return false
 }
 
-// ReaderToString returns the contents of the
+// ReadAllString returns the contents of the
 // io.Reader stringified
-func ReaderToString(reader io.Reader) string {
+func ReadAllString(reader io.Reader) string {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(reader)
 	return buf.String()

@@ -9,23 +9,35 @@ import (
 	"github.com/chzyer/readline"
 	"github.com/elastic/elasticsearch-cli/cli"
 	"github.com/elastic/elasticsearch-cli/client"
-	"github.com/elastic/elasticsearch-cli/poller"
 )
 
 // Application contains the full application and its dependencies
 type Application struct {
 	config       *Config
-	client       client.ClientInterface
-	formatter    cli.FormatterInterface
+	client       client.Client
+	formatter    cli.Formatter
 	indexChannel chan []string
-	parser       cli.ParserInterface
-	poller       poller.Interface
+	parser       Parser
+	poller       Poller
 	repl         *readline.Instance
+}
+
+// Parser is the interface for the Application Parser
+type Parser interface {
+	Validate() error
+	Method() string
+	URL() string
+	Body() string
+}
+
+// Poller is the responsible for polling ElasticSearch and retrieving endpoints to autocomplete the CLI
+type Poller interface {
+	Run()
 }
 
 // Init ties all the application pieces together and returns a conveninent *Application struct
 // that allows easy interaction with all the pieces of the application
-func Init(config *Config, client client.ClientInterface, parser cli.ParserInterface, c chan []string, w poller.Interface) *Application {
+func Init(config *Config, client client.Client, parser Parser, c chan []string, w Poller) *Application {
 	return &Application{
 		config:       config,
 		client:       client,
@@ -106,7 +118,7 @@ func (app *Application) Interactive() {
 			continue
 		}
 
-		app.parser, err = cli.NewParser(lineSliced)
+		app.parser, err = cli.NewInputParser(lineSliced)
 		if err != nil {
 			log.Print("[ERROR]: ", err)
 			continue

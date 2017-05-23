@@ -3,11 +3,10 @@ package client
 import (
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"testing"
 	"time"
-
-	"net/url"
 
 	"github.com/elastic/elasticsearch-cli/utils"
 )
@@ -22,12 +21,12 @@ func (c *emptyMockCaller) Do(*http.Request) (*http.Response, error) {
 func TestNewClient(t *testing.T) {
 	type args struct {
 		config *Config
-		client CallerInterface
+		client HTTPCallerInterface
 	}
 	tests := []struct {
 		name string
 		args args
-		want ClientInterface
+		want Client
 	}{
 		{
 			"NewClientHasMockClientInjected",
@@ -35,7 +34,7 @@ func TestNewClient(t *testing.T) {
 				config: &Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
 				client: &emptyMockCaller{},
 			},
-			NewClient(
+			NewHTTPClient(
 				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
 				&emptyMockCaller{},
 			),
@@ -46,7 +45,7 @@ func TestNewClient(t *testing.T) {
 				config: &Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
 				client: nil,
 			},
-			NewClient(
+			NewHTTPClient(
 				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
 				nil,
 			),
@@ -54,7 +53,7 @@ func TestNewClient(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewClient(tt.args.config, tt.args.client); !reflect.DeepEqual(got, tt.want) {
+			if got := NewHTTPClient(tt.args.config, tt.args.client); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewClient() = %v, want %v", got, tt.want)
 			}
 		})
@@ -64,7 +63,7 @@ func TestNewClient(t *testing.T) {
 func TestClient_HandleCall(t *testing.T) {
 	type fields struct {
 		config *Config
-		caller CallerInterface
+		caller HTTPCallerInterface
 	}
 	type args struct {
 		method string
@@ -165,7 +164,7 @@ func TestClient_HandleCall(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{
+			c := &HTTPClient{
 				config: tt.fields.config,
 				caller: tt.fields.caller,
 			}
@@ -184,7 +183,7 @@ func TestClient_HandleCall(t *testing.T) {
 func TestClient_createRequest(t *testing.T) {
 	type fields struct {
 		config *Config
-		caller CallerInterface
+		caller HTTPCallerInterface
 	}
 	type args struct {
 		method string
@@ -237,7 +236,7 @@ func TestClient_createRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{
+			c := &HTTPClient{
 				config: tt.fields.config,
 				caller: tt.fields.caller,
 			}

@@ -62,10 +62,10 @@ func TestInit(t *testing.T) {
 	channel := make(chan []string, 1)
 	type args struct {
 		config *Config
-		client client.ClientInterface
-		parser cli.ParserInterface
+		client client.Client
+		parser Parser
 		c      chan []string
-		w      poller.Interface
+		w      Poller
 	}
 	tests := []struct {
 		name string
@@ -80,7 +80,7 @@ func TestInit(t *testing.T) {
 					10,
 				},
 				&mockClient{},
-				&cli.Parser{},
+				&cli.InputParser{},
 				channel,
 				&poller.IndexPoller{},
 			},
@@ -90,7 +90,7 @@ func TestInit(t *testing.T) {
 					10,
 				},
 				client:       &mockClient{},
-				parser:       &cli.Parser{},
+				parser:       &cli.InputParser{},
 				indexChannel: channel,
 				poller:       &poller.IndexPoller{},
 			},
@@ -108,11 +108,11 @@ func TestInit(t *testing.T) {
 func TestApplication_HandleCli(t *testing.T) {
 	type fields struct {
 		config       *Config
-		client       client.ClientInterface
-		formatter    cli.FormatterInterface
+		client       client.Client
+		formatter    cli.Formatter
 		indexChannel chan []string
-		parser       cli.ParserInterface
-		poller       poller.Interface
+		parser       Parser
+		poller       Poller
 		repl         *readline.Instance
 	}
 	type args struct {
@@ -215,11 +215,11 @@ func TestApplication_HandleCli(t *testing.T) {
 func TestApplication_doSetCommands(t *testing.T) {
 	type fields struct {
 		config       *Config
-		client       client.ClientInterface
-		formatter    cli.FormatterInterface
+		client       client.Client
+		formatter    cli.Formatter
 		indexChannel chan []string
-		parser       cli.ParserInterface
-		poller       poller.Interface
+		parser       Parser
+		poller       Poller
 		repl         *readline.Instance
 	}
 	type args struct {
@@ -229,7 +229,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   client.ClientInterface
+		want   client.Client
 	}{
 		{
 			"SetHostIsCalled",

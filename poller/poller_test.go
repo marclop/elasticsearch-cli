@@ -48,14 +48,14 @@ func (c *mockClient) SetPass(string) {}
 func TestNewIndexPoller(t *testing.T) {
 	channel := make(chan []string, 1)
 	type args struct {
-		client client.ClientInterface
+		client client.Client
 		c      chan []string
 		poll   int
 	}
 	tests := []struct {
 		name string
 		args args
-		want Interface
+		want *IndexPoller
 	}{
 		{
 			"NewIndexPollerSucceeds",
@@ -84,7 +84,7 @@ func TestNewIndexPoller(t *testing.T) {
 func TestIndexPoller_run(t *testing.T) {
 	channel := make(chan []string, 1)
 	type fields struct {
-		client   client.ClientInterface
+		client   client.Client
 		endpoint string
 		channel  chan []string
 		pollRate time.Duration

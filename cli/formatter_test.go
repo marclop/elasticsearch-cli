@@ -16,7 +16,7 @@ func TestNewJSONFormatter(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want FormatterInterface
+		want Formatter
 	}{
 		{
 			"NewJSONFormatterSucceds",
@@ -45,7 +45,7 @@ func TestNewIteractiveJSONFormatter(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want FormatterInterface
+		want Formatter
 	}{
 		{
 			"NewJInteractiveSONFormatterSucceds",

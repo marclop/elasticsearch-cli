@@ -3,3 +3,5 @@ vendor
 pkg
 .glide
 .vscode
+bin
+reports

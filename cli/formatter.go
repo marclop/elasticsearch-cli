@@ -14,12 +14,12 @@ type JSONFormatter struct {
 	interactive bool
 }
 
-type FormatterInterface interface {
+type Formatter interface {
 	Format(bool)
 }
 
 // NewJSONFormatter initializes a JSON Formatter non interactive
-func NewJSONFormatter(input *http.Response) FormatterInterface {
+func NewJSONFormatter(input *http.Response) *JSONFormatter {
 	return &JSONFormatter{
 		input:       input,
 		interactive: false,
@@ -27,7 +27,7 @@ func NewJSONFormatter(input *http.Response) FormatterInterface {
 }
 
 // NewIteractiveJSONFormatter initializes a JSON Formatter interactive
-func NewIteractiveJSONFormatter(input *http.Response) FormatterInterface {
+func NewIteractiveJSONFormatter(input *http.Response) *JSONFormatter {
 	return &JSONFormatter{
 		input:       input,
 		interactive: true,
