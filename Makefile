@@ -7,40 +7,46 @@ INSTALL_PATH ?= /usr/local/bin
 ES_VERSION ?= 1.7 2.4 5.4
 ES_PORT ?= 9200
 ES_CONTAINER_NAME ?= elasticsearch-cli_es
+ES_IMAGE ?= elasticsearch
+ES_TAG_SUFFIX ?= -alpine
 BUILD_PLATFORMS ?= "darwin linux"
 BUILD_ARCHITECTURES ?= "386 amd64"
 BUILD_OUTPUT ?= "pkg/{{.Dir}}_{{.OS}}_{{.Arch}}"
 REPORT_PATH ?= reports
 REPORT_FORMAT ?= html
+define HELP
+
+$(BINARY) v$(VERSION) Makefile
+=================================
+
+## Build target
+
+- build:                  It will cross build $(BINARY) for $(BUILD_PLATFORMS).
+- install:                It will install $(BINARY) in the current system (by default in $(INSTALL_PATH)/$(BINARY)).
+- deps:                   It will install Glide and Gox in the system.
+
+## Development targets
+
+- vendor:                 Installs vendor dependencies.
+- start-es:               Starts Elasticsearch containers ($(shell echo $(ES_VERSION) | tr " " ","m)).
+- stop-es:                Stops Elasticsearch containers ($(shell echo $(ES_VERSION) | tr " " ","m)).
+- unit:                   Runs unit tests.
+- acceptance:             Runs acceptance tests.
+- test:                   Runs all tests.
+- code-quality:           Runs a code quality against $(elasticsearch-cli).
+- get-quality-report:     Returns the path for the latest code-quality report.
+
+## Release targets
+
+- release:                Releases the package to GitHub.
+
+endef
+export HELP
 
 .DEFAULT: help
 .PHONY: help
 help:
-	@ echo
-	@ echo "$(BINARY) v$(VERSION) Makefile"
-	@ echo "================================="
-	@ echo
-	@ echo "## Build targets"
-	@ echo
-	@ echo "- build:                  It will cross build $(BINARY) for \"$(BUILD_ARCHITECTURES)\" and OS \"$(BUILD_PLATFORMS)\"."
-	@ echo "- install:                It will install $(BINARY) in the current system (by default in $(INSTALL_PATH)/$(BINARY))."
-	@ echo "- deps:                   It will install Glide and Gox in the system."
-	@ echo
-	@ echo "## Development targets"
-	@ echo
-	@ echo "- vendor:                 Installs vendor dependencies."
-	@ echo "- start-es:               Starts Elasticsearch containers ($(shell echo $(ES_VERSION) | tr " " ","m))."
-	@ echo "- stop-es:                Stops Elasticsearch containers ($(shell echo $(ES_VERSION) | tr " " ","m))."
-	@ echo "- unit:                   Runs unit tests."
-	@ echo "- acceptance:             Runs acceptance tests."
-	@ echo "- test:                   Runs all tests."
-	@ echo "- code-quality:           Runs a code quality against $(elasticsearch-cli)."
-	@ echo "- get-quality-report:     Returns the path for the latest code-quality report."
-	@ echo
-	@ echo "## Release targets"
-	@ echo
-	@ echo "- release:                Releases the package to GitHub."
-	@ echo
+	@ echo "$$HELP"
 
 .PHONY: deps
 deps:
@@ -103,19 +109,18 @@ unit:
 
 .PHONY: acceptance
 acceptance: _set_build_current_arch build
-	@ $(foreach es_version,$(ES_VERSION),$(MAKE) acc ES_VERSION=$(es_version) || docker kill $(ES_CONTAINER_NAME)_$(es_version);)
+	@ $(foreach es_version,$(ES_VERSION),$(MAKE) acc ES_VERSION=$(es_version);)
 
 .PHONY: acc
 acc: start_elasticsearch_docker
 	@ echo "-> Running acceptance tests for $(BINARY) in Elasticsearch $(ES_VERSION)..."
-	@ go test -tags acceptance .
-	@ echo "-> Killing Docker container $(ES_CONTAINER_NAME)_$(ES_VERSION)"
-	@ docker kill $(ES_CONTAINER_NAME)_$(ES_VERSION) > /dev/null || true
+	@ go test -tags acceptance . || (echo "-> Killing Docker container $$( docker kill $(ES_CONTAINER_NAME)_$(ES_VERSION) )" && exit 1) \
+	&& (echo "-> Killing Docker container $$(docker kill $(ES_CONTAINER_NAME)_$(ES_VERSION))")
 
 .PHONY: start_elasticsearch_docker
 start_elasticsearch_docker:
 	@ printf "=> Starting Elasticsearch $(ES_VERSION)... "
-	@ docker run -d --rm -p '$(ES_PORT):9200' --name $(ES_CONTAINER_NAME)_$(ES_VERSION) elasticsearch:$(ES_VERSION) > /dev/null
+	@ docker run -d --rm -p '$(ES_PORT):9200' --name $(ES_CONTAINER_NAME)_$(ES_VERSION) $(ES_IMAGE):$(ES_VERSION)$(ES_TAG_SUFFIX) > /dev/null
 	@ while ! docker logs $(ES_CONTAINER_NAME)_$(ES_VERSION) | grep recovered > /dev/null; do sleep 1; done
 	@ echo "Done."
 
@@ -124,7 +129,7 @@ code-quality:
 	@ go get -u github.com/wgliang/goreporter
 	@ rm -rf .glide
 	@ mkdir -p $(REPORT_PATH)
-	@ goreporter -p ../$(BINARY) -e vendor -f $(REPORT_FORMAT) -r $(REPORT_PATH)
+	@ goreporter -p ../$(BINARY) -e vendor *_test.go -f $(REPORT_FORMAT) -r $(REPORT_PATH)
 	@ $$(open $$(make get-quality-report))
 
 .PHONY: get-quality-report

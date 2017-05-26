@@ -1,88 +1,29 @@
 package cli
 
 import (
+	"bytes"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strings"
 	"testing"
 )
 
-func TestNewJSONFormatter(t *testing.T) {
+func TestFormat(t *testing.T) {
 	type args struct {
-		input *http.Response
-	}
-	tests := []struct {
-		name string
-		args args
-		want Formatter
-	}{
-		{
-			"NewJSONFormatterSucceds",
-			args{
-				&http.Response{},
-			},
-			&JSONFormatter{
-				&http.Response{},
-				false,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewJSONFormatter(tt.args.input); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewJSONFormatter() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestNewIteractiveJSONFormatter(t *testing.T) {
-	type args struct {
-		input *http.Response
-	}
-	tests := []struct {
-		name string
-		args args
-		want Formatter
-	}{
-		{
-			"NewJInteractiveSONFormatterSucceds",
-			args{
-				&http.Response{},
-			},
-			&JSONFormatter{
-				&http.Response{},
-				true,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewIteractiveJSONFormatter(tt.args.input); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewIteractiveJSONFormatter() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestJSONFormatter_Format(t *testing.T) {
-	type fields struct {
 		input       *http.Response
+		verbose     bool
 		interactive bool
-	}
-	type args struct {
-		verbose bool
+		writer      *bytes.Buffer
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name string
+		args args
+		want string
 	}{
 		{
 			"FormatSucceeds",
-			fields{
+			args{
 				&http.Response{
 					Body: ioutil.NopCloser(strings.NewReader("MyPlainTextInput")),
 					Request: &http.Request{
@@ -90,14 +31,15 @@ func TestJSONFormatter_Format(t *testing.T) {
 					},
 				},
 				false,
-			},
-			args{
 				false,
+				&bytes.Buffer{},
 			},
+			`MyPlainTextInput
+`,
 		},
 		{
 			"FormatSucceedsWithJSONResponse",
-			fields{
+			args{
 				&http.Response{
 					Body: ioutil.NopCloser(strings.NewReader(`{"a":"b"}`)),
 					Request: &http.Request{
@@ -105,16 +47,20 @@ func TestJSONFormatter_Format(t *testing.T) {
 					},
 				},
 				false,
-			},
-			args{
 				false,
+				&bytes.Buffer{},
 			},
+			`{
+  "a": "b"
+}
+`,
 		},
 		{
 			"FormatSucceedsWithHEADMethod",
-			fields{
+			args{
 				&http.Response{
-					Body: ioutil.NopCloser(strings.NewReader("")),
+					Body:   ioutil.NopCloser(strings.NewReader("")),
+					Status: "200 OK",
 					Request: &http.Request{
 						Method: "HEAD",
 						Header: http.Header{
@@ -123,16 +69,20 @@ func TestJSONFormatter_Format(t *testing.T) {
 					},
 				},
 				false,
-			},
-			args{
 				false,
+				&bytes.Buffer{},
 			},
+			`Response:     200 OK
+Content-Type: application/json
+
+`,
 		},
 		{
 			"FormatSucceedsWithVerboseOn",
-			fields{
+			args{
 				&http.Response{
-					Body: ioutil.NopCloser(strings.NewReader("")),
+					Body:   ioutil.NopCloser(strings.NewReader("")),
+					Status: "200 OK",
 					Request: &http.Request{
 						Method: "HEAD",
 						Header: http.Header{
@@ -143,17 +93,23 @@ func TestJSONFormatter_Format(t *testing.T) {
 						},
 					},
 				},
-				false,
-			},
-			args{
 				true,
+				false,
+				&bytes.Buffer{},
 			},
+			`Method:       HEAD
+URL:          /
+Response:     200 OK
+Content-Type: application/json
+
+`,
 		},
 		{
 			"FormatSucceedsWithInteractive",
-			fields{
+			args{
 				&http.Response{
-					Body: ioutil.NopCloser(strings.NewReader("")),
+					Body:   ioutil.NopCloser(strings.NewReader("")),
+					Status: "200 OK",
 					Request: &http.Request{
 						Method: "HEAD",
 						Header: http.Header{
@@ -164,20 +120,25 @@ func TestJSONFormatter_Format(t *testing.T) {
 						},
 					},
 				},
-				true,
-			},
-			args{
 				false,
+				true,
+				&bytes.Buffer{},
 			},
+			`Method:       HEAD
+URL:          /
+
+Response:     200 OK
+Content-Type: application/json
+
+`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &JSONFormatter{
-				input:       tt.fields.input,
-				interactive: tt.fields.interactive,
+			Format(tt.args.input, tt.args.verbose, tt.args.interactive, tt.args.writer)
+			if tt.args.writer.String() != tt.want {
+				t.Errorf("Format() = %v, want = %v", tt.args.writer.String(), tt.want)
 			}
-			f.Format(tt.args.verbose)
 		})
 	}
 }

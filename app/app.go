@@ -3,6 +3,7 @@ package app
 import (
 	"io"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -15,7 +16,8 @@ import (
 type Application struct {
 	config       *Config
 	client       client.Client
-	formatter    cli.Formatter
+	format       Formatter
+	output       io.Writer
 	indexChannel chan []string
 	parser       Parser
 	poller       Poller
@@ -35,15 +37,20 @@ type Poller interface {
 	Run()
 }
 
+// Formatter formats the HTTPResponse to Stdout
+type Formatter func(input *http.Response, verbose bool, interactive bool, writer io.Writer)
+
 // Init ties all the application pieces together and returns a conveninent *Application struct
 // that allows easy interaction with all the pieces of the application
-func Init(config *Config, client client.Client, parser Parser, c chan []string, w Poller) *Application {
+func Init(config *Config, client client.Client, p Parser, f Formatter, c chan []string, w Poller, o io.Writer) *Application {
 	return &Application{
 		config:       config,
 		client:       client,
-		parser:       parser,
+		format:       f,
+		parser:       p,
 		indexChannel: c,
 		poller:       w,
+		output:       o,
 	}
 }
 
@@ -56,13 +63,7 @@ func (app *Application) HandleCli(method string, url string, body string) error 
 	}
 	defer res.Body.Close()
 
-	if app.repl != nil {
-		app.formatter = cli.NewIteractiveJSONFormatter(res)
-	} else {
-		app.formatter = cli.NewJSONFormatter(res)
-	}
-
-	app.formatter.Format(app.config.verbose)
+	app.format(res, app.config.verbose, app.repl != nil, app.output)
 	return err
 }
 
@@ -143,9 +144,10 @@ func (app *Application) doSetCommands(lineSliced []string) {
 		case "port":
 			port, err := strconv.Atoi(lineSliced[2])
 			if err != nil {
-				log.Print(lineSliced[2], "is not a valid port")
+				log.Print(lineSliced[2], " is not a valid port")
+			} else {
+				app.client.SetPort(port)
 			}
-			app.client.SetPort(port)
 		case "user":
 			app.client.SetUser(lineSliced[2])
 		case "pass":

@@ -1,14 +1,13 @@
 package poller
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
-
-	"fmt"
 
 	"github.com/elastic/elasticsearch-cli/client"
 )

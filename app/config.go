@@ -7,9 +7,8 @@ type Config struct {
 }
 
 // NewApplicationConfig acts as the Factory for the elasticsearch-cli config
-func NewApplicationConfig(verbose bool, pollInterval int) *Config {
+func NewApplicationConfig(verbose bool) *Config {
 	return &Config{
-		verbose:      verbose,
-		pollInterval: pollInterval,
+		verbose: verbose,
 	}
 }

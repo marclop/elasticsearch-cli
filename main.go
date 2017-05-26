@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/elastic/elasticsearch-cli/app"
 	"github.com/elastic/elasticsearch-cli/cli"
@@ -11,6 +12,7 @@ import (
 	"github.com/elastic/elasticsearch-cli/poller"
 )
 
+// Version of elasticsearch-cli, populated at compile time
 var Version string
 
 func main() {
@@ -18,8 +20,8 @@ func main() {
 	portFlag := flag.Int("port", 9200, "Set the Elasticsearch Port")
 	userFlag := flag.String("user", "", "Username for HTTP basic auth")
 	passFlag := flag.String("pass", "", "Password for HTTP basic auth")
-	timeoutFlag := flag.Int("timeout", 10, "Set the HTTP client timeout")
-	pollFlag := flag.Int("poll", 10, "Set the poll interval for index autodiscovery")
+	timeoutFlag := flag.Int("timeout", 10, "Set the HTTP timeout")
+	pollFlag := flag.Int("poll", 10, "Set the poll interval for index / endpoint autodiscovery")
 	verboseFlag := flag.Bool("verbose", false, "Verbose request/response information")
 
 	flag.Parse()
@@ -33,24 +35,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("[ERROR]: %s", err)
 	}
-	client := client.NewHTTPClient(clientConfig, nil)
 
+	httpClient := client.NewHTTPClient(clientConfig, nil)
 	parser, err := cli.NewInputParser(args)
 	if err != nil {
 		log.Fatalf("[ERROR]: %s", err)
 	}
 
 	indicesChannel := make(chan []string, 1)
-	poller := poller.NewIndexPoller(client, indicesChannel, *pollFlag)
-	appConfig := app.NewApplicationConfig(*verboseFlag, *pollFlag)
-	app := app.Init(appConfig, client, parser, indicesChannel, poller)
+	indexPoller := poller.NewIndexPoller(httpClient, indicesChannel, *pollFlag)
+	appConfig := app.NewApplicationConfig(*verboseFlag)
+	application := app.Init(appConfig, httpClient, parser, cli.Format, indicesChannel, indexPoller, os.Stdout)
 
 	if len(args) > 0 {
-		err := app.HandleCli(parser.Method(), parser.URL(), parser.Body())
+		err := application.HandleCli(parser.Method(), parser.URL(), parser.Body())
 		if err != nil {
 			log.Fatalf("[ERROR]: %s", err)
 		}
 	} else {
-		app.Interactive()
+		application.Interactive()
 	}
 }

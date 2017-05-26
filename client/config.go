@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/elastic/elasticsearch-cli/utils"
 )
 
@@ -30,11 +31,10 @@ type hostPort struct {
 // If a socket is passed as a URL (http://<host>:<port>), the complex URL will prevail
 // from the passed port
 func NewClientConfig(host string, port int, user string, pass string, timeout int) (*Config, error) {
-	err := validateSchema(host)
+	hp, err := newHostPortString(host, port)
 	if err != nil {
 		return nil, err
 	}
-	hp := newHostPortString(host, port)
 
 	return &Config{
 		hostPort: hp,
@@ -46,20 +46,29 @@ func NewClientConfig(host string, port int, user string, pass string, timeout in
 }
 
 func validateSchema(host string) error {
-	if !(strings.HasPrefix(host, "http://") || strings.HasPrefix(host, "https://")) {
-		return fmt.Errorf("Host doesn't contain a valid HTTP protocol (http|https) => %s", host)
+	if govalidator.IsURL(host) {
+		return nil
 	}
-	return nil
+	return fmt.Errorf("host \"%s\" is invalid", host)
 }
 
-func newHostPortString(host string, port int) *hostPort {
+func newHostPortString(host string, port int) (*hostPort, error) {
+	err := validateSchema(host)
+	if err != nil {
+		return nil, err
+	}
+
 	urlString := strings.Split(host, "/")[2]
+	defaultHostPort := &hostPort{strings.Join(strings.Split(host, ":")[0:2], ":"), port}
 	if strings.Contains(urlString, ":") {
 		urlStringPort := strings.Split(urlString, ":")[1]
-		intedPort, _ := strconv.Atoi(urlStringPort)
-		return &hostPort{strings.Join(strings.Split(host, ":")[0:2], ":"), intedPort}
+		intedPort, err := strconv.Atoi(urlStringPort)
+		if err != nil {
+			return nil, fmt.Errorf("invalid port \"%s\"", urlStringPort)
+		}
+		return &hostPort{defaultHostPort.Host, intedPort}, nil
 	}
-	return &hostPort{strings.Join(strings.Split(host, ":")[0:2], ":"), port}
+	return defaultHostPort, nil
 }
 
 // SetHeader that will be sent with the request
@@ -80,12 +89,11 @@ func (c *Config) Timeout() time.Duration {
 
 // SetHost modifies the target host
 func (c *Config) SetHost(value string) error {
-	err := validateSchema(value)
-	if err != nil {
-		return err
+	hostPort, err := newHostPortString(value, c.hostPort.Port)
+	if err == nil {
+		c.hostPort = hostPort
 	}
-	c.hostPort = newHostPortString(value, c.hostPort.Port)
-	return nil
+	return err
 }
 
 // SetPort modifies the target port

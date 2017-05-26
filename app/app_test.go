@@ -1,7 +1,9 @@
 package app
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -64,6 +66,7 @@ func TestInit(t *testing.T) {
 		config *Config
 		client client.Client
 		parser Parser
+		f      Formatter
 		c      chan []string
 		w      Poller
 	}
@@ -81,6 +84,7 @@ func TestInit(t *testing.T) {
 				},
 				&mockClient{},
 				&cli.InputParser{},
+				nil,
 				channel,
 				&poller.IndexPoller{},
 			},
@@ -93,12 +97,14 @@ func TestInit(t *testing.T) {
 				parser:       &cli.InputParser{},
 				indexChannel: channel,
 				poller:       &poller.IndexPoller{},
+				format:       nil,
+				output:       nil,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Init(tt.args.config, tt.args.client, tt.args.parser, tt.args.c, tt.args.w); !reflect.DeepEqual(got, tt.want) {
+			if got := Init(tt.args.config, tt.args.client, tt.args.parser, nil, tt.args.c, tt.args.w, nil); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Init() = %v, want %v", got, tt.want)
 			}
 		})
@@ -109,11 +115,12 @@ func TestApplication_HandleCli(t *testing.T) {
 	type fields struct {
 		config       *Config
 		client       client.Client
-		formatter    cli.Formatter
+		format       Formatter
 		indexChannel chan []string
 		parser       Parser
 		poller       Poller
 		repl         *readline.Instance
+		output       io.Writer
 	}
 	type args struct {
 		method string
@@ -140,6 +147,8 @@ func TestApplication_HandleCli(t *testing.T) {
 						"Content-Type": []string{"application/json"},
 					},
 				},
+				format: cli.Format,
+				output: &bytes.Buffer{},
 			},
 			args{
 				"GET",
@@ -162,7 +171,9 @@ func TestApplication_HandleCli(t *testing.T) {
 						"Content-Type": []string{"application/json"},
 					},
 				},
-				repl: &readline.Instance{},
+				repl:   &readline.Instance{},
+				format: cli.Format,
+				output: &bytes.Buffer{},
 			},
 			args{
 				"GET",
@@ -185,6 +196,8 @@ func TestApplication_HandleCli(t *testing.T) {
 						"Content-Type": []string{"application/json"},
 					},
 				},
+				format: cli.Format,
+				output: &bytes.Buffer{},
 			},
 			args{
 				"GET",
@@ -199,11 +212,12 @@ func TestApplication_HandleCli(t *testing.T) {
 			app := &Application{
 				config:       tt.fields.config,
 				client:       tt.fields.client,
-				formatter:    tt.fields.formatter,
+				format:       tt.fields.format,
 				indexChannel: tt.fields.indexChannel,
 				parser:       tt.fields.parser,
 				poller:       tt.fields.poller,
 				repl:         tt.fields.repl,
+				output:       tt.fields.output,
 			}
 			if err := app.HandleCli(tt.args.method, tt.args.url, tt.args.body); (err != nil) != tt.wantErr {
 				t.Errorf("Application.HandleCli() error = %v, wantErr %v", err, tt.wantErr)
@@ -216,11 +230,12 @@ func TestApplication_doSetCommands(t *testing.T) {
 	type fields struct {
 		config       *Config
 		client       client.Client
-		formatter    cli.Formatter
+		format       Formatter
 		indexChannel chan []string
 		parser       Parser
 		poller       Poller
 		repl         *readline.Instance
+		output       io.Writer
 	}
 	type args struct {
 		lineSliced []string
@@ -241,7 +256,9 @@ func TestApplication_doSetCommands(t *testing.T) {
 				client: &mockClient{
 					props: make(map[string]interface{}, 1),
 				},
-				repl: &readline.Instance{},
+				repl:   &readline.Instance{},
+				format: cli.Format,
+				output: &bytes.Buffer{},
 			},
 			args{
 				[]string{
@@ -257,6 +274,33 @@ func TestApplication_doSetCommands(t *testing.T) {
 			},
 		},
 		{
+			"SetHostIsCalledWithInvalidSchema",
+			fields{
+				config: &Config{
+					false,
+					10,
+				},
+				client: &mockClient{
+					props: make(map[string]interface{}, 1),
+				},
+				repl:   &readline.Instance{},
+				format: cli.Format,
+				output: &bytes.Buffer{},
+			},
+			args{
+				[]string{
+					"set",
+					"host",
+					"INVALID://localhost",
+				},
+			},
+			&mockClient{
+				props: map[string]interface{}{
+					"host": "INVALID://localhost",
+				},
+			},
+		},
+		{
 			"SetPortIsCalled",
 			fields{
 				config: &Config{
@@ -266,7 +310,9 @@ func TestApplication_doSetCommands(t *testing.T) {
 				client: &mockClient{
 					props: make(map[string]interface{}, 1),
 				},
-				repl: &readline.Instance{},
+				repl:   &readline.Instance{},
+				format: cli.Format,
+				output: &bytes.Buffer{},
 			},
 			args{
 				[]string{
@@ -291,7 +337,9 @@ func TestApplication_doSetCommands(t *testing.T) {
 				client: &mockClient{
 					props: make(map[string]interface{}, 1),
 				},
-				repl: &readline.Instance{},
+				repl:   &readline.Instance{},
+				format: cli.Format,
+				output: &bytes.Buffer{},
 			},
 			args{
 				[]string{
@@ -316,7 +364,9 @@ func TestApplication_doSetCommands(t *testing.T) {
 				client: &mockClient{
 					props: make(map[string]interface{}, 1),
 				},
-				repl: &readline.Instance{},
+				repl:   &readline.Instance{},
+				format: cli.Format,
+				output: &bytes.Buffer{},
 			},
 			args{
 				[]string{
@@ -337,11 +387,12 @@ func TestApplication_doSetCommands(t *testing.T) {
 			app := &Application{
 				config:       tt.fields.config,
 				client:       tt.fields.client,
-				formatter:    tt.fields.formatter,
+				format:       tt.fields.format,
 				indexChannel: tt.fields.indexChannel,
 				parser:       tt.fields.parser,
 				poller:       tt.fields.poller,
 				repl:         tt.fields.repl,
+				output:       tt.fields.output,
 			}
 			app.doSetCommands(tt.args.lineSliced)
 			if !reflect.DeepEqual(app.client, tt.want) {

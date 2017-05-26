@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/elasticsearch-cli/utils"
 )
 
+// Client is the responsible to issue HTTP calls to Elasticsearch
 type Client interface {
 	HandleCall(string, string, string) (*http.Response, error)
 	SetHost(string) error
@@ -16,6 +17,7 @@ type Client interface {
 	SetPass(string)
 }
 
+// HTTPCaller is the HTTP implementation for caller
 type HTTPCallerInterface interface {
 	Do(*http.Request) (*http.Response, error)
 }

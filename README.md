@@ -229,10 +229,11 @@ $ elasticsearch-cli -port 9201 GET | jq '.name'
 ## Setting up the environment
 
 Elasticsearch-cli is written in [Go](http://golang.org/), so you'll need the latest version of Golang if you want to contribute.
+You will also need the latest version of Docker to be able to run the acceptance tests.
 
-## Building from the development version
+## Running all the tests
 
-## Running the tests
+Issuing `make test` will run the combination of `unit` and `acceptance` tests. If you want a specific test, just use either target.
 
 ```sh
 $ make test
