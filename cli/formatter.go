@@ -4,61 +4,37 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
 )
 
-type Formatter struct {
-	input       *http.Response
-	interactive bool
-}
-
-type FormatterInterface interface {
-	FormatJSON(bool)
-}
-
-//TODO: Revisit implementation
-
-func NewJSONFormatter(input *http.Response) *Formatter {
-	return &Formatter{
-		input:       input,
-		interactive: false,
-	}
-}
-
-func NewIteractiveJSONFormatter(input *http.Response) *Formatter {
-	return &Formatter{
-		input:       input,
-		interactive: true,
-	}
-}
-
-func (f *Formatter) FormatJSON(verbose bool) {
-	content, _ := ioutil.ReadAll(f.input.Body)
+// Format formats the HTTPResponse to Stdout
+func Format(input *http.Response, verbose bool, interactive bool, writer io.Writer) {
+	content, _ := ioutil.ReadAll(input.Body)
 	var out bytes.Buffer
 	err := json.Indent(&out, content, "", "  ")
 
-	if f.interactive || verbose {
-		fmt.Printf("Method:       %s\n", strings.ToUpper(f.input.Request.Method))
-		fmt.Printf("URL:          %s\n", strings.ToLower(f.input.Request.URL.Path))
+	if interactive || verbose {
+		fmt.Fprintf(writer, "Method:       %s\n", strings.ToUpper(input.Request.Method))
+		fmt.Fprintf(writer, "URL:          %s\n", strings.ToLower(input.Request.URL.Path))
 		if !verbose {
-			fmt.Println()
+			fmt.Fprintln(writer)
 		}
 	}
-	if verbose || f.input.Request.Method == "HEAD" {
-		fmt.Println("Response:    ", f.input.Status)
-		fmt.Printf("Content-Type: %s\n\n", f.input.Request.Header["Content-Type"][0])
+	if verbose || input.Request.Method == "HEAD" {
+		fmt.Fprintln(writer, "Response:    ", input.Status)
+		fmt.Fprintf(writer, "Content-Type: %s\n\n", input.Request.Header["Content-Type"][0])
 	}
 
-	if f.input.Request.Method == "HEAD" {
+	if input.Request.Method == "HEAD" {
 		return
 	}
 
 	if err != nil {
-		fmt.Println(strings.TrimSpace(string(content)))
+		fmt.Fprintln(writer, strings.TrimSpace(string(content)))
 		return
 	}
-	fmt.Println(strings.TrimSpace(out.String()))
-
+	fmt.Fprintln(writer, strings.TrimSpace(out.String()))
 }

@@ -224,11 +224,53 @@ $ elasticsearch-cli -port 9201 GET | jq '.name'
 "hIzXUZY"
 ```
 
+# Contributing
+
+## Setting up the environment
+
+Elasticsearch-cli is written in [Go](http://golang.org/), so you'll need the latest version of Golang if you want to contribute.
+You will also need the latest version of Docker to be able to run the acceptance tests.
+
+## Running all the tests
+
+Issuing `make test` will run the combination of `unit` and `acceptance` tests. If you want a specific test, just use either target.
+
+```sh
+$ make test
+-> Running unit tests for elasticsearch-cli...
+ok  	github.com/elastic/elasticsearch-cli/app	0.010s	coverage: 33.3% of statements
+ok  	github.com/elastic/elasticsearch-cli/cli	0.015s	coverage: 63.9% of statements
+ok  	github.com/elastic/elasticsearch-cli/client	0.027s	coverage: 83.3% of statements
+?   	github.com/elastic/elasticsearch-cli/elasticsearch	[no test files]
+ok  	github.com/elastic/elasticsearch-cli/poller	0.008s	coverage: 81.5% of statements
+ok  	github.com/elastic/elasticsearch-cli/utils	0.006s	coverage: 100.0% of statements
+?   	github.com/elastic/elasticsearch-cli	[no test files]
+-> Installing elasticsearch-cli dependencies...
+[..]
+-> Building elasticsearch-cli...
+Number of parallel builds: 7
+
+-->    darwin/amd64: github.com/elastic/elasticsearch-cli
+=> Starting Elasticsearch 1.7... Done.
+-> Running acceptance tests for elasticsearch-cli in Elasticsearch 1.7...
+ok  	github.com/elastic/elasticsearch-cli	1.276s
+-> Killing Docker container elasticsearch-cli_es_1.7
+=> Starting Elasticsearch 2.4... Done.
+-> Running acceptance tests for elasticsearch-cli in Elasticsearch 2.4...
+ok  	github.com/elastic/elasticsearch-cli	1.421s
+-> Killing Docker container elasticsearch-cli_es_2.4
+=> Starting Elasticsearch 5.4... Done.
+-> Running acceptance tests for elasticsearch-cli in Elasticsearch 5.4...
+ok  	github.com/elastic/elasticsearch-cli	3.566s
+-> Killing Docker container elasticsearch-cli_es_5.4
+```
+
 # TODOs
 
 - [X] REPL Auto-discover indices
 - [X] Use logger
-- [ ] Test, test and test
+- [X] Create Unit tests
+- [X] Acceptance tests
 - [ ] Improve help Flag
 - [ ] Configuration files
 - [ ] CI

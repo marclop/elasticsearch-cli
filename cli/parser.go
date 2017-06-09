@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 
@@ -16,21 +15,14 @@ var supportedMethods = []string{
 	"POST",
 }
 
-type Parser struct {
+type InputParser struct {
 	method string
 	url    string
 	body   string
 }
 
-type ParserInterface interface {
-	Validate() error
-	Method() string
-	URL() string
-	Body() string
-}
-
-// NewParser initializes the parser and validates the input
-func NewParser(input []string) (ParserInterface, error) {
+// NewInputParser initializes the parser and validates the input
+func NewInputParser(input []string) (*InputParser, error) {
 	url := "/"
 	body := ""
 	method := "GET"
@@ -49,18 +41,22 @@ func NewParser(input []string) (ParserInterface, error) {
 		body = input[2]
 	}
 
-	p := &Parser{
+	p := &InputParser{
 		method: strings.ToUpper(method),
 		url:    strings.ToLower(url),
 		body:   body,
 	}
-	return p, p.Validate()
+
+	err := p.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
-//TODO: Use Hashicorp multierror
-
 // Validate makes sure that the parsed method and URL are valid
-func (p *Parser) Validate() error {
+func (p *InputParser) Validate() error {
 	if !utils.StringInSlice(p.method, supportedMethods) {
 		return fmt.Errorf("method \"%s\" is not supported", p.method)
 	}
@@ -68,26 +64,23 @@ func (p *Parser) Validate() error {
 	return nil
 }
 
-func (p *Parser) ensureURLIsPrefixed() {
+func (p *InputParser) ensureURLIsPrefixed() {
 	if !strings.HasPrefix(p.url, "/") {
-		var buffer bytes.Buffer
-		buffer.WriteString("/")
-		buffer.WriteString(p.url)
-		p.url = buffer.String()
+		p.url = utils.ConcatStrings("/", p.url)
 	}
 }
 
 // Method returns the parsed Method in uppercase
-func (p *Parser) Method() string {
+func (p *InputParser) Method() string {
 	return p.method
 }
 
 // URL returns the parsed URL in in lowercase
-func (p *Parser) URL() string {
+func (p *InputParser) URL() string {
 	return p.url
 }
 
 // Body returns the parsed request body
-func (p *Parser) Body() string {
+func (p *InputParser) Body() string {
 	return p.body
 }

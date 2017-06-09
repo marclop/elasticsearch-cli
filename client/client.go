@@ -1,13 +1,15 @@
 package client
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/elastic/elasticsearch-cli/utils"
 )
 
-type ClientInterface interface {
+// Client is the responsible to issue HTTP calls to Elasticsearch
+type Client interface {
 	HandleCall(string, string, string) (*http.Response, error)
 	SetHost(string) error
 	SetPort(int)
@@ -15,28 +17,35 @@ type ClientInterface interface {
 	SetPass(string)
 }
 
-type Client struct {
-	config  *Config
-	address string
-	client  *http.Client
+// HTTPCaller is the HTTP implementation for caller
+type HTTPCallerInterface interface {
+	Do(*http.Request) (*http.Response, error)
 }
 
-func NewClient(config *Config) *Client {
-	return &Client{
-		config: config,
-		client: &http.Client{
+type HTTPClient struct {
+	config *Config
+	caller HTTPCallerInterface
+}
+
+func NewHTTPClient(config *Config, client HTTPCallerInterface) *HTTPClient {
+	if client == nil {
+		client = &http.Client{
 			Timeout: config.Timeout(),
-		},
+		}
+	}
+	return &HTTPClient{
+		config: config,
+		caller: client,
 	}
 }
 
 // TODO: Bulk operations
 
 // HandleCall is responsible to perform HTTP requests against the secified url
-// it heavivly relies on the underlying net/http.Client.
+// it relies on the underlying net/http.Client or Injected CallerInterface.
 //
 // Because we have to inject the `Content-Type: application/json`, client.Do is used.
-func (c *Client) HandleCall(method string, url string, body string) (*http.Response, error) {
+func (c *HTTPClient) HandleCall(method string, url string, body string) (*http.Response, error) {
 	var bodyIoReader io.Reader
 	if body != "" {
 		bodyIoReader = strings.NewReader(body)
@@ -47,10 +56,10 @@ func (c *Client) HandleCall(method string, url string, body string) (*http.Respo
 		return nil, err
 	}
 
-	return c.client.Do(req)
+	return c.caller.Do(req)
 }
 
-func (c *Client) createRequest(method string, url string, body io.Reader) (*http.Request, error) {
+func (c *HTTPClient) createRequest(method string, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -67,26 +76,26 @@ func (c *Client) createRequest(method string, url string, body io.Reader) (*http
 	return req, nil
 }
 
-func (c *Client) fullURL(url string) string {
-	return fmt.Sprintf("%s%s", c.config.HTTPAdress(), url)
+func (c *HTTPClient) fullURL(url string) string {
+	return utils.ConcatStrings(c.config.HTTPAdress(), url)
 }
 
 // SetHost modifies the target host
-func (c *Client) SetHost(value string) error {
+func (c *HTTPClient) SetHost(value string) error {
 	return c.config.SetHost(value)
 }
 
 // SetPort modifies the target port
-func (c *Client) SetPort(value int) {
+func (c *HTTPClient) SetPort(value int) {
 	c.config.SetPort(value)
 }
 
 // SetUser modifies the user (HTTP Basic Auth)
-func (c *Client) SetUser(value string) {
+func (c *HTTPClient) SetUser(value string) {
 	c.config.user = value
 }
 
 // SetPass modifies the password (HTTP Basic Auth)
-func (c *Client) SetPass(value string) {
+func (c *HTTPClient) SetPass(value string) {
 	c.config.pass = value
 }

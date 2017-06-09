@@ -3,35 +3,54 @@ package app
 import (
 	"io"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/chzyer/readline"
 	"github.com/elastic/elasticsearch-cli/cli"
 	"github.com/elastic/elasticsearch-cli/client"
-	"github.com/elastic/elasticsearch-cli/poller"
 )
 
 // Application contains the full application and its dependencies
 type Application struct {
 	config       *Config
-	client       client.ClientInterface
-	formatter    cli.FormatterInterface
+	client       client.Client
+	format       Formatter
+	output       io.Writer
 	indexChannel chan []string
-	parser       cli.ParserInterface
-	poller       poller.PollerInterface
+	parser       Parser
+	poller       Poller
 	repl         *readline.Instance
 }
 
+// Parser is the interface for the Application Parser
+type Parser interface {
+	Validate() error
+	Method() string
+	URL() string
+	Body() string
+}
+
+// Poller is the responsible for polling ElasticSearch and retrieving endpoints to autocomplete the CLI
+type Poller interface {
+	Run()
+}
+
+// Formatter formats the HTTPResponse to Stdout
+type Formatter func(input *http.Response, verbose bool, interactive bool, writer io.Writer)
+
 // Init ties all the application pieces together and returns a conveninent *Application struct
 // that allows easy interaction with all the pieces of the application
-func Init(config *Config, client client.ClientInterface, parser cli.ParserInterface, c chan []string, w poller.PollerInterface) *Application {
+func Init(config *Config, client client.Client, p Parser, f Formatter, c chan []string, w Poller, o io.Writer) *Application {
 	return &Application{
 		config:       config,
 		client:       client,
-		parser:       parser,
+		format:       f,
+		parser:       p,
 		indexChannel: c,
 		poller:       w,
+		output:       o,
 	}
 }
 
@@ -44,13 +63,7 @@ func (app *Application) HandleCli(method string, url string, body string) error 
 	}
 	defer res.Body.Close()
 
-	if app.repl != nil {
-		app.formatter = cli.NewIteractiveJSONFormatter(res)
-	} else {
-		app.formatter = cli.NewJSONFormatter(res)
-	}
-
-	app.formatter.FormatJSON(app.config.verbose)
+	app.format(res, app.config.verbose, app.repl != nil, app.output)
 	return err
 }
 
@@ -106,7 +119,7 @@ func (app *Application) Interactive() {
 			continue
 		}
 
-		app.parser, err = cli.NewParser(lineSliced)
+		app.parser, err = cli.NewInputParser(lineSliced)
 		if err != nil {
 			log.Print("[ERROR]: ", err)
 			continue
@@ -131,9 +144,10 @@ func (app *Application) doSetCommands(lineSliced []string) {
 		case "port":
 			port, err := strconv.Atoi(lineSliced[2])
 			if err != nil {
-				log.Print(lineSliced[2], "is not a valid port")
+				log.Print(lineSliced[2], " is not a valid port")
+			} else {
+				app.client.SetPort(port)
 			}
-			app.client.SetPort(port)
 		case "user":
 			app.client.SetUser(lineSliced[2])
 		case "pass":
