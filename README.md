@@ -12,7 +12,7 @@
 
 # Installation
 
-To install `elasticsearch-cli` you can either grab the latest binaries in the [release page](https://github.com/elastic/elasticsearch-cli/releases)
+To install `elasticsearch-cli` you can either grab the latest binaries in the [release page](https://github.com/marclop/elasticsearch-cli/releases)
 or install the latest and most recent commit from the source code
 
 ## Latest build
@@ -238,30 +238,30 @@ Issuing `make test` will run the combination of `unit` and `acceptance` tests. I
 ```sh
 $ make test
 -> Running unit tests for elasticsearch-cli...
-ok  	github.com/elastic/elasticsearch-cli/app	0.010s	coverage: 33.3% of statements
-ok  	github.com/elastic/elasticsearch-cli/cli	0.015s	coverage: 63.9% of statements
-ok  	github.com/elastic/elasticsearch-cli/client	0.027s	coverage: 83.3% of statements
-?   	github.com/elastic/elasticsearch-cli/elasticsearch	[no test files]
-ok  	github.com/elastic/elasticsearch-cli/poller	0.008s	coverage: 81.5% of statements
-ok  	github.com/elastic/elasticsearch-cli/utils	0.006s	coverage: 100.0% of statements
-?   	github.com/elastic/elasticsearch-cli	[no test files]
+ok  	github.com/marclop/elasticsearch-cli/app	0.010s	coverage: 33.3% of statements
+ok  	github.com/marclop/elasticsearch-cli/cli	0.015s	coverage: 63.9% of statements
+ok  	github.com/marclop/elasticsearch-cli/client	0.027s	coverage: 83.3% of statements
+?   	github.com/marclop/elasticsearch-cli/elasticsearch	[no test files]
+ok  	github.com/marclop/elasticsearch-cli/poller	0.008s	coverage: 81.5% of statements
+ok  	github.com/marclop/elasticsearch-cli/utils	0.006s	coverage: 100.0% of statements
+?   	github.com/marclop/elasticsearch-cli	[no test files]
 -> Installing elasticsearch-cli dependencies...
 [..]
 -> Building elasticsearch-cli...
 Number of parallel builds: 7
 
--->    darwin/amd64: github.com/elastic/elasticsearch-cli
+-->    darwin/amd64: github.com/marclop/elasticsearch-cli
 => Starting Elasticsearch 1.7... Done.
 -> Running acceptance tests for elasticsearch-cli in Elasticsearch 1.7...
-ok  	github.com/elastic/elasticsearch-cli	1.276s
+ok  	github.com/marclop/elasticsearch-cli	1.276s
 -> Killing Docker container elasticsearch-cli_es_1.7
 => Starting Elasticsearch 2.4... Done.
 -> Running acceptance tests for elasticsearch-cli in Elasticsearch 2.4...
-ok  	github.com/elastic/elasticsearch-cli	1.421s
+ok  	github.com/marclop/elasticsearch-cli	1.421s
 -> Killing Docker container elasticsearch-cli_es_2.4
 => Starting Elasticsearch 5.4... Done.
 -> Running acceptance tests for elasticsearch-cli in Elasticsearch 5.4...
-ok  	github.com/elastic/elasticsearch-cli	3.566s
+ok  	github.com/marclop/elasticsearch-cli	3.566s
 -> Killing Docker container elasticsearch-cli_es_5.4
 ```
 

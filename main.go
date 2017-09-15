@@ -6,10 +6,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/elastic/elasticsearch-cli/app"
-	"github.com/elastic/elasticsearch-cli/cli"
-	"github.com/elastic/elasticsearch-cli/client"
-	"github.com/elastic/elasticsearch-cli/poller"
+	"github.com/marclop/elasticsearch-cli/app"
+	"github.com/marclop/elasticsearch-cli/cli"
+	"github.com/marclop/elasticsearch-cli/client"
+	"github.com/marclop/elasticsearch-cli/poller"
 )
 
 // Version of elasticsearch-cli, populated at compile time

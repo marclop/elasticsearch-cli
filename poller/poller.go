@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/elastic/elasticsearch-cli/client"
-	"github.com/elastic/elasticsearch-cli/elasticsearch"
-	"github.com/elastic/elasticsearch-cli/utils"
+	"github.com/marclop/elasticsearch-cli/client"
+	"github.com/marclop/elasticsearch-cli/elasticsearch"
+	"github.com/marclop/elasticsearch-cli/utils"
 )
 
 // IndexPoller polls the ElasticSearch API to discover which indices exist

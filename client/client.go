@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/elastic/elasticsearch-cli/utils"
+	"github.com/marclop/elasticsearch-cli/utils"
 )
 
 // Client is the responsible to issue HTTP calls to Elasticsearch
@@ -17,16 +17,18 @@ type Client interface {
 	SetPass(string)
 }
 
-// HTTPCaller is the HTTP implementation for caller
+// HTTPCallerInterface is the HTTP implementation for caller
 type HTTPCallerInterface interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
+// HTTPClient Wraps an http.Client with its config
 type HTTPClient struct {
 	config *Config
 	caller HTTPCallerInterface
 }
 
+// NewHTTPClient is the factory function for HTTPClient
 func NewHTTPClient(config *Config, client HTTPCallerInterface) *HTTPClient {
 	if client == nil {
 		client = &http.Client{

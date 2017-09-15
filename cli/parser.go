@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/elastic/elasticsearch-cli/utils"
+	"github.com/marclop/elasticsearch-cli/utils"
 )
 
 var supportedMethods = []string{
@@ -15,6 +15,8 @@ var supportedMethods = []string{
 	"POST",
 }
 
+// InputParser is the struct that parses the input into something usable by the
+// application
 type InputParser struct {
 	method string
 	url    string

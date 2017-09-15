@@ -2,7 +2,7 @@ package cli
 
 import (
 	"github.com/chzyer/readline"
-	"github.com/elastic/elasticsearch-cli/utils"
+	"github.com/marclop/elasticsearch-cli/utils"
 )
 
 var getAPI = []readline.PrefixCompleterInterface{

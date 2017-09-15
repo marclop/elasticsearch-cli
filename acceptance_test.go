@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/elastic/elasticsearch-cli/utils"
+	"github.com/marclop/elasticsearch-cli/utils"
 )
 
 type Response struct {

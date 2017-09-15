@@ -4,7 +4,7 @@ BINARY := elasticsearch-cli
 VERSION ?= 0.1.1
 INSTALL_PATH ?= /usr/local/bin
 # Test all major version of ES
-ES_VERSION ?= 1.7 2.4 5.4
+ES_VERSION ?= 1.7 2.4 5.4 5.5
 ES_PORT ?= 9200
 ES_CONTAINER_NAME ?= elasticsearch-cli_es
 ES_IMAGE ?= elasticsearch
@@ -53,7 +53,8 @@ deps:
 ifndef GLIDE_PRESENT
 	@ curl -sL https://glide.sh/get | bash
 endif
-	@ go get github.com/mitchellh/gox
+	@ go get -u github.com/golang/lint/golint
+	@ go get -u github.com/mitchellh/gox
 
 .PHONY: vendor
 vendor:
@@ -100,16 +101,20 @@ stop-es:
 	@ $(foreach es_version,$(ES_VERSION),echo "Stopped $$(docker kill $(ES_CONTAINER_NAME)_$(es_version))";)
 
 .PHONY: test
-test: unit acceptance
+test: lint unit acceptance
 
 .PHONY: unit
 unit:
 	@ echo "-> Running unit tests for $(BINARY)..."
-	@ go test -cover $(shell glide nv)
+	@ go test -p 2 -race -cover $(shell glide nv)
 
 .PHONY: acceptance
 acceptance: _set_build_current_arch build
 	@ $(foreach es_version,$(ES_VERSION),$(MAKE) acc ES_VERSION=$(es_version);)
+
+.PHONY: lint
+lint: deps
+	@ golint -set_exit_status $(shell glide nv)
 
 .PHONY: acc
 acc: start_elasticsearch_docker

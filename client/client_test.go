@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elastic/elasticsearch-cli/utils"
+	"github.com/marclop/elasticsearch-cli/utils"
 )
 
 type emptyMockCaller struct{}

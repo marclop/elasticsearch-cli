@@ -12,9 +12,9 @@ import (
 	"testing"
 
 	"github.com/chzyer/readline"
-	"github.com/elastic/elasticsearch-cli/cli"
-	"github.com/elastic/elasticsearch-cli/client"
-	"github.com/elastic/elasticsearch-cli/poller"
+	"github.com/marclop/elasticsearch-cli/cli"
+	"github.com/marclop/elasticsearch-cli/client"
+	"github.com/marclop/elasticsearch-cli/poller"
 )
 
 type mockClient struct {

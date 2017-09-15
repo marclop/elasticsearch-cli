@@ -7,13 +7,14 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/elastic/elasticsearch-cli/utils"
+	"github.com/marclop/elasticsearch-cli/utils"
 )
 
 var defaultClientHeaders = map[string]string{
 	"Content-Type": "application/json",
 }
 
+// Config contains the config http.Client that will be used for the http.Client
 type Config struct {
 	hostPort *hostPort
 	user     string

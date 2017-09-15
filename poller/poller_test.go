@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elastic/elasticsearch-cli/client"
+	"github.com/marclop/elasticsearch-cli/client"
 )
 
 type mockClient struct {
