@@ -1,4 +1,4 @@
-# Elasticsearch-cli
+# Elasticsearch-cli [![Build Status](https://travis-ci.org/marclop/elasticsearch-cli.svg?branch=master)](https://travis-ci.org/marclop/elasticsearch-cli)
 
 `elasticsearch-cli` provides a Kibana console-like interface to interact with ElasticSearch
 

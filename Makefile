@@ -57,7 +57,7 @@ endif
 	@ go get -u github.com/mitchellh/gox
 
 .PHONY: vendor
-vendor:
+vendor: deps
 	@ echo "-> Installing $(BINARY) dependencies..."
 	@ glide install
 
