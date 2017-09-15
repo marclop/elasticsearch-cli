@@ -106,7 +106,14 @@ test: lint unit acceptance
 .PHONY: unit
 unit:
 	@ echo "-> Running unit tests for $(BINARY)..."
-	@ go test -p 2 -race -cover $(shell glide nv)
+	@ echo "" > coverage.txt
+	@ for d in $(shell glide nv); do \
+			go test -race -coverprofile=coverage.txt -covermode=atomic $$d; \
+			if [ -f profile.out ]; then \
+				cat profile.out >> coverage.txt ; \
+				rm profile.out ; \
+			fi ; \
+		done;
 
 .PHONY: acceptance
 acceptance: _set_build_current_arch build
