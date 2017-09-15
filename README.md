@@ -1,4 +1,4 @@
-# Elasticsearch-cli [![Build Status](https://travis-ci.org/marclop/elasticsearch-cli.svg?branch=master)](https://travis-ci.org/marclop/elasticsearch-cli)
+# Elasticsearch-cli [![Build Status](https://travis-ci.org/marclop/elasticsearch-cli.svg?branch=master)](https://travis-ci.org/marclop/elasticsearch-cli) [![Go Report Card](https://goreportcard.com/badge/github.com/marclop/elasticsearch-cli)](https://goreportcard.com/report/github.com/marclop/elasticsearch-cli)
 
 `elasticsearch-cli` provides a Kibana console-like interface to interact with ElasticSearch
 
