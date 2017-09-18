@@ -16,20 +16,12 @@ import (
 type Application struct {
 	config       *Config
 	client       client.Client
-	format       Formatter
+	formatFunc   Formatter
 	output       io.Writer
 	indexChannel chan []string
-	parser       Parser
+	parser       *cli.InputParser
 	poller       Poller
 	repl         *readline.Instance
-}
-
-// Parser is the interface for the Application Parser
-type Parser interface {
-	Validate() error
-	Method() string
-	URL() string
-	Body() string
 }
 
 // Poller is the responsible for polling ElasticSearch and retrieving endpoints to autocomplete the CLI
@@ -42,11 +34,11 @@ type Formatter func(input *http.Response, verbose bool, interactive bool, writer
 
 // Init ties all the application pieces together and returns a conveninent *Application struct
 // that allows easy interaction with all the pieces of the application
-func Init(config *Config, client client.Client, p Parser, f Formatter, c chan []string, w Poller, o io.Writer) *Application {
+func Init(config *Config, client client.Client, p *cli.InputParser, f Formatter, c chan []string, w Poller, o io.Writer) *Application {
 	return &Application{
 		config:       config,
 		client:       client,
-		format:       f,
+		formatFunc:   f,
 		parser:       p,
 		indexChannel: c,
 		poller:       w,
@@ -63,7 +55,7 @@ func (app *Application) HandleCli(method string, url string, body string) error 
 	}
 	defer res.Body.Close()
 
-	app.format(res, app.config.verbose, app.repl != nil, app.output)
+	app.formatFunc(res, app.config.Verbose, app.repl != nil, app.output)
 	return err
 }
 
@@ -83,8 +75,10 @@ func (app *Application) initInteractive() {
 
 func (app *Application) refreshCompleter() {
 	for {
-		indices := <-app.indexChannel
-		app.repl.Config.AutoComplete = cli.AssembleIndexCompleter(indices)
+		select {
+		case indices := <-app.indexChannel:
+			app.repl.Config.AutoComplete = cli.AssembleIndexCompleter(indices)
+		}
 	}
 }
 
@@ -125,7 +119,7 @@ func (app *Application) Interactive() {
 			continue
 		}
 
-		err = app.HandleCli(app.parser.Method(), app.parser.URL(), app.parser.Body())
+		err = app.HandleCli(app.parser.Method, app.parser.URL, app.parser.Body)
 		if err != nil {
 			log.Print("[ERROR]: ", err)
 		}
@@ -154,6 +148,6 @@ func (app *Application) doSetCommands(lineSliced []string) {
 			app.client.SetPass(lineSliced[2])
 		}
 	} else if (len(lineSliced) == 2) && (lineSliced[1] == "verbose") {
-		app.config.verbose = true
+		app.config.Verbose = true
 	}
 }

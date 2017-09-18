@@ -48,11 +48,13 @@ func main() {
 	application := app.Init(appConfig, httpClient, parser, cli.Format, indicesChannel, indexPoller, os.Stdout)
 
 	if len(args) > 0 {
-		err := application.HandleCli(parser.Method(), parser.URL(), parser.Body())
+		err := application.HandleCli(parser.Method, parser.URL, parser.Body)
 		if err != nil {
 			log.Fatalf("[ERROR]: %s", err)
 		}
+		close(indicesChannel)
 	} else {
 		application.Interactive()
+		indexPoller.Stop()
 	}
 }

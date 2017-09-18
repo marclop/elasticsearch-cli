@@ -1,36 +1,8 @@
 package utils
 
 import (
-	"io"
-	"strings"
 	"testing"
 )
-
-func TestReaderToString(t *testing.T) {
-	type args struct {
-		reader io.Reader
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			"NewReaderToStringSucceeds",
-			args{
-				strings.NewReader("MyTestString"),
-			},
-			"MyTestString",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := ReadAllString(tt.args.reader); got != tt.want {
-				t.Errorf("ReaderToString() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestStringInSlice(t *testing.T) {
 	type args struct {

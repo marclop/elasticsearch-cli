@@ -65,7 +65,7 @@ func TestInit(t *testing.T) {
 	type args struct {
 		config *Config
 		client client.Client
-		parser Parser
+		parser *cli.InputParser
 		f      Formatter
 		c      chan []string
 		w      Poller
@@ -97,7 +97,7 @@ func TestInit(t *testing.T) {
 				parser:       &cli.InputParser{},
 				indexChannel: channel,
 				poller:       &poller.IndexPoller{},
-				format:       nil,
+				formatFunc:   nil,
 				output:       nil,
 			},
 		},
@@ -117,7 +117,7 @@ func TestApplication_HandleCli(t *testing.T) {
 		client       client.Client
 		format       Formatter
 		indexChannel chan []string
-		parser       Parser
+		parser       *cli.InputParser
 		poller       Poller
 		repl         *readline.Instance
 		output       io.Writer
@@ -212,7 +212,7 @@ func TestApplication_HandleCli(t *testing.T) {
 			app := &Application{
 				config:       tt.fields.config,
 				client:       tt.fields.client,
-				format:       tt.fields.format,
+				formatFunc:   tt.fields.format,
 				indexChannel: tt.fields.indexChannel,
 				parser:       tt.fields.parser,
 				poller:       tt.fields.poller,
@@ -232,7 +232,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 		client       client.Client
 		format       Formatter
 		indexChannel chan []string
-		parser       Parser
+		parser       *cli.InputParser
 		poller       Poller
 		repl         *readline.Instance
 		output       io.Writer
@@ -387,7 +387,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 			app := &Application{
 				config:       tt.fields.config,
 				client:       tt.fields.client,
-				format:       tt.fields.format,
+				formatFunc:   tt.fields.format,
 				indexChannel: tt.fields.indexChannel,
 				parser:       tt.fields.parser,
 				poller:       tt.fields.poller,
