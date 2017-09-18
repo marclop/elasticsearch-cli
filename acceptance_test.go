@@ -5,6 +5,7 @@ package main
 import (
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"os/exec"
 	"strings"
 	"testing"
@@ -159,7 +160,7 @@ func TestElasticsearchCliInteractive(t *testing.T) {
 		want    []string
 	}{
 		{
-			"GetRootSucceeds",
+			"Get root path succeeds",
 			[]string{
 				"GET /",
 				"exit",
@@ -170,7 +171,7 @@ func TestElasticsearchCliInteractive(t *testing.T) {
 			},
 		},
 		{
-			"GetRootSucceeds",
+			"create index a with no settings",
 			[]string{
 				"PUT a",
 				"GET a",
@@ -184,7 +185,21 @@ func TestElasticsearchCliInteractive(t *testing.T) {
 			},
 		},
 		{
-			"SetInvalidPortFails",
+			"create index with settings",
+			[]string{
+				`PUT index_with_settings {"settings": {"index": {"number_of_replicas" : 0} }}`,
+				"GET index_with_settings",
+				"DELETE index_with_settings",
+				"exit",
+			},
+			false,
+			[]string{
+				`"index_with_settings": {`,
+				`"acknowledged": true`,
+			},
+		},
+		{
+			"Set invalid port fails",
 			[]string{
 				"set port asda",
 			},
@@ -194,7 +209,7 @@ func TestElasticsearchCliInteractive(t *testing.T) {
 			},
 		},
 		{
-			"SetInvalidHostFails",
+			"set invalid host fails",
 			[]string{
 				"set host asda",
 			},
@@ -204,7 +219,7 @@ func TestElasticsearchCliInteractive(t *testing.T) {
 			},
 		},
 		{
-			"SetInvalidHostPortFails",
+			"set invalid host port fails",
 			[]string{
 				"set host http://localhost:INVALID",
 			},
@@ -242,8 +257,10 @@ func TestElasticsearchCliInteractive(t *testing.T) {
 		}
 
 		stdin.Close()
-		out := utils.ReadAllString(stdout)
-		stdErrOut := utils.ReadAllString(stderr)
+		outBytes, _ := ioutil.ReadAll(stdout)
+		out := string(outBytes)
+		stdErrBytes, _ := ioutil.ReadAll(stderr)
+		stdErrOut := string(stdErrBytes)
 
 		if out != "" {
 			t.Logf("[Test %d INFO]: %s stdout Result: \n%s", testN, tt.name, out)
