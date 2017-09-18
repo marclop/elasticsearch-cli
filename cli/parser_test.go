@@ -96,9 +96,9 @@ func TestNewInputParser(t *testing.T) {
 
 func TestParser_Validate(t *testing.T) {
 	type fields struct {
-		method string
-		url    string
-		body   string
+		Method string
+		URL    string
+		Body   string
 	}
 	tests := []struct {
 		name    string
@@ -127,93 +127,12 @@ func TestParser_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &InputParser{
-				method: tt.fields.method,
-				url:    tt.fields.url,
-				body:   tt.fields.body,
+				Method: tt.fields.Method,
+				URL:    tt.fields.URL,
+				Body:   tt.fields.Body,
 			}
 			if err := p.Validate(); (err != nil) != tt.wantErr {
 				t.Errorf("Parser.Validate() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestParser_Method(t *testing.T) {
-	type fields struct {
-		method string
-		url    string
-		body   string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-	// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &InputParser{
-				method: tt.fields.method,
-				url:    tt.fields.url,
-				body:   tt.fields.body,
-			}
-			if got := p.Method(); got != tt.want {
-				t.Errorf("Parser.Method() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestParser_URL(t *testing.T) {
-	type fields struct {
-		method string
-		url    string
-		body   string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-	// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &InputParser{
-				method: tt.fields.method,
-				url:    tt.fields.url,
-				body:   tt.fields.body,
-			}
-			if got := p.URL(); got != tt.want {
-				t.Errorf("Parser.URL() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestParser_Body(t *testing.T) {
-	type fields struct {
-		method string
-		url    string
-		body   string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-	// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &InputParser{
-				method: tt.fields.method,
-				url:    tt.fields.url,
-				body:   tt.fields.body,
-			}
-			if got := p.Body(); got != tt.want {
-				t.Errorf("Parser.Body() = %v, want %v", got, tt.want)
 			}
 		})
 	}

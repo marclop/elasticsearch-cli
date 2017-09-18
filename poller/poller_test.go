@@ -68,12 +68,15 @@ func TestNewIndexPoller(t *testing.T) {
 				defaultPollingEndpoint,
 				channel,
 				time.Duration(10) * time.Second,
+				make(chan bool, 1),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewIndexPoller(tt.args.client, tt.args.c, tt.args.poll); !reflect.DeepEqual(got, tt.want) {
+			got := NewIndexPoller(tt.args.client, tt.args.c, tt.args.poll)
+			got.controlChannel = tt.want.controlChannel
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewIndexPoller() = %v, want %v", got, tt.want)
 			}
 		})
@@ -192,6 +195,58 @@ yellow open   wat          s0uzswacS2-jPJJgKb8r7w   5   1          0            
 			}
 			if got := w.run(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("IndexPoller.run() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIndexPoller_Run(t *testing.T) {
+	type fields struct {
+		client   client.Client
+		endpoint string
+		pollRate time.Duration
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   []string
+	}{
+		{
+			"",
+			fields{
+				&mockClient{
+					`yellow open   elastic      dBoWJXLBSRuumXa-a-QN1w   5   1          0            0       650b           650b
+yellow open   found        oBcPStMpTD2BZtQ9j2ff3w   5   1          0            0       650b           650b
+yellow open   wat          s0uzswacS2-jPJJgKb8r7w   5   1          0            0       650b           650b`,
+					false,
+					nil,
+				},
+				defaultPollingEndpoint,
+				time.Duration(1 * time.Second),
+			},
+			[]string{
+				"elastic",
+				"found",
+				"wat",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			indicesChannel := make(chan []string, 1)
+			controlChannel := make(chan bool, 1)
+			w := &IndexPoller{
+				client:         tt.fields.client,
+				endpoint:       tt.fields.endpoint,
+				channel:        indicesChannel,
+				pollRate:       tt.fields.pollRate,
+				controlChannel: controlChannel,
+			}
+			go w.Run()
+			got := <-w.channel
+			w.Stop()
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("IndexPoller.Run() = %v, want %v", got, tt.want)
 			}
 		})
 	}

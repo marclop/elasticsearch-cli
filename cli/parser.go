@@ -7,6 +7,10 @@ import (
 	"github.com/marclop/elasticsearch-cli/utils"
 )
 
+const (
+	defaultURL = "/"
+)
+
 var supportedMethods = []string{
 	"GET",
 	"HEAD",
@@ -18,71 +22,50 @@ var supportedMethods = []string{
 // InputParser is the struct that parses the input into something usable by the
 // application
 type InputParser struct {
-	method string
-	url    string
-	body   string
+	Method string
+	URL    string
+	Body   string
 }
 
 // NewInputParser initializes the parser and validates the input
 func NewInputParser(input []string) (*InputParser, error) {
-	url := "/"
-	body := ""
-	method := "GET"
-
 	if len(input) == 0 {
 		return nil, nil
 	}
 
-	method = strings.ToUpper(input[0])
+	var inputParser = &InputParser{
+		Method: strings.ToUpper(input[0]),
+		URL:    defaultURL,
+		Body:   "",
+	}
 
 	if len(input) > 1 {
-		url = strings.ToLower(input[1])
+		inputParser.URL = strings.ToLower(input[1])
 	}
 
-	if len(input) == 3 {
-		body = input[2]
+	if len(input) > 2 {
+		inputParser.Body = strings.Join(input[2:], "")
 	}
 
-	p := &InputParser{
-		method: strings.ToUpper(method),
-		url:    strings.ToLower(url),
-		body:   body,
-	}
-
-	err := p.Validate()
+	err := inputParser.Validate()
 	if err != nil {
 		return nil, err
 	}
 
-	return p, nil
+	return inputParser, nil
 }
 
-// Validate makes sure that the parsed method and URL are valid
+// Validate makes sure that the parsed Method and URL are valid
 func (p *InputParser) Validate() error {
-	if !utils.StringInSlice(p.method, supportedMethods) {
-		return fmt.Errorf("method \"%s\" is not supported", p.method)
+	if !utils.StringInSlice(p.Method, supportedMethods) {
+		return fmt.Errorf("Method \"%s\" is not supported", p.Method)
 	}
 	p.ensureURLIsPrefixed()
 	return nil
 }
 
 func (p *InputParser) ensureURLIsPrefixed() {
-	if !strings.HasPrefix(p.url, "/") {
-		p.url = utils.ConcatStrings("/", p.url)
+	if !strings.HasPrefix(p.URL, "/") {
+		p.URL = utils.ConcatStrings("/", p.URL)
 	}
-}
-
-// Method returns the parsed Method in uppercase
-func (p *InputParser) Method() string {
-	return p.method
-}
-
-// URL returns the parsed URL in in lowercase
-func (p *InputParser) URL() string {
-	return p.url
-}
-
-// Body returns the parsed request body
-func (p *InputParser) Body() string {
-	return p.body
 }

@@ -5,6 +5,37 @@ import (
 	"github.com/marclop/elasticsearch-cli/utils"
 )
 
+var (
+	getActions = []string{
+		"/_aliases",
+		"/_analyze",
+		"/_count",
+		"/_mapping",
+		"/_recovery",
+		"/_segments",
+		"/_search",
+		"/_search/_search_shards",
+		"/_settings",
+		"/_shard_stores",
+		"/_stats",
+		"/_validate/query",
+	}
+	putActions = []string{
+		"/_mapping",
+		"/_settings",
+	}
+	postActions = []string{
+		"/_aliases",
+		"/_cache/clear",
+		"/_close",
+		"/_flush/synced",
+		"/_forcemerge",
+		"/_open",
+		"/_refresh",
+		"/_rollover",
+	}
+)
+
 var getAPI = []readline.PrefixCompleterInterface{
 	readline.PcItem("_analyze"),
 	readline.PcItem("_cat/indices"),
@@ -82,31 +113,17 @@ func AssembleIndexCompleter(indices []string) readline.PrefixCompleterInterface 
 	}
 
 	for _, index := range indices {
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_aliases")))
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_analyze")))
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_count")))
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_mapping")))
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_recovery")))
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_segments")))
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_search")))
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_search/_search_shards")))
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_settings")))
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_shard_stores")))
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_stats")))
-		indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, "/_validate/query")))
+		for _, endpoint := range getActions {
+			indexGetOperations = append(indexGetOperations, readline.PcItem(utils.ConcatStrings(index, endpoint)))
+		}
 
-		indexPutOperations = append(indexPutOperations, readline.PcItem(utils.ConcatStrings(index, "/_mapping")))
-		indexPutOperations = append(indexPutOperations, readline.PcItem(utils.ConcatStrings(index, "/_settings")))
-		// indexPutOperations = append(indexPutOperations, readline.PcItem(utils.ConcatStrings(index, "/_aliases")))
+		for _, endpoint := range putActions {
+			indexPutOperations = append(indexPutOperations, readline.PcItem(utils.ConcatStrings(index, endpoint)))
+		}
 
-		indexPostOperations = append(indexPostOperations, readline.PcItem(utils.ConcatStrings(index, "/_aliases")))
-		indexPostOperations = append(indexPostOperations, readline.PcItem(utils.ConcatStrings(index, "/_cache/clear")))
-		indexPostOperations = append(indexPostOperations, readline.PcItem(utils.ConcatStrings(index, "/_close")))
-		indexPostOperations = append(indexPostOperations, readline.PcItem(utils.ConcatStrings(index, "/_flush/synced")))
-		indexPostOperations = append(indexPostOperations, readline.PcItem(utils.ConcatStrings(index, "/_forcemerge")))
-		indexPostOperations = append(indexPostOperations, readline.PcItem(utils.ConcatStrings(index, "/_open")))
-		indexPostOperations = append(indexPostOperations, readline.PcItem(utils.ConcatStrings(index, "/_refresh")))
-		indexPostOperations = append(indexPostOperations, readline.PcItem(utils.ConcatStrings(index, "/_rollover")))
+		for _, endpoint := range postActions {
+			indexPostOperations = append(indexPostOperations, readline.PcItem(utils.ConcatStrings(index, endpoint)))
+		}
 
 		for _, indexTarget := range indices {
 			if index != indexTarget {
