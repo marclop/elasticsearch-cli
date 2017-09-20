@@ -16,10 +16,10 @@ var defaultClientHeaders = map[string]string{
 
 // Config contains the config http.Client that will be used for the http.Client
 type Config struct {
-	hostPort *hostPort
-	user     string
-	pass     string
-	timeout  time.Duration
+	HostPort *hostPort
+	User     string
+	Pass     string
+	Timeout  time.Duration
 	headers  map[string]string
 }
 
@@ -38,10 +38,10 @@ func NewClientConfig(host string, port int, user string, pass string, timeout in
 	}
 
 	return &Config{
-		hostPort: hp,
-		user:     user,
-		pass:     pass,
-		timeout:  time.Duration(timeout) * time.Second,
+		HostPort: hp,
+		User:     user,
+		Pass:     pass,
+		Timeout:  time.Duration(timeout) * time.Second,
 		headers:  defaultClientHeaders,
 	}, nil
 }
@@ -80,34 +80,14 @@ func (c *Config) SetHeader(key string, value string) {
 // HTTPAdress returns the host and port combination so it can
 // be used by the Client http://host:port
 func (c *Config) HTTPAdress() string {
-	return utils.ConcatStrings(c.hostPort.Host, ":", strconv.Itoa(c.hostPort.Port))
-}
-
-// Timeout returns the configured HTTP timeout
-func (c *Config) Timeout() time.Duration {
-	return c.timeout
+	return utils.ConcatStrings(c.HostPort.Host, ":", strconv.Itoa(c.HostPort.Port))
 }
 
 // SetHost modifies the target host
 func (c *Config) SetHost(value string) error {
-	hostPort, err := newHostPortString(value, c.hostPort.Port)
+	hostPort, err := newHostPortString(value, c.HostPort.Port)
 	if err == nil {
-		c.hostPort = hostPort
+		c.HostPort = hostPort
 	}
 	return err
-}
-
-// SetPort modifies the target port
-func (c *Config) SetPort(value int) {
-	c.hostPort.Port = value
-}
-
-// SetUser modifies the user (HTTP Basic Auth)
-func (c *Config) SetUser(value string) {
-	c.user = value
-}
-
-// SetPass modifies the password (HTTP Basic Auth)
-func (c *Config) SetPass(value string) {
-	c.pass = value
 }

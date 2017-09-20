@@ -8,35 +8,27 @@ import (
 	"github.com/marclop/elasticsearch-cli/utils"
 )
 
-// Client is the responsible to issue HTTP calls to Elasticsearch
-type Client interface {
-	HandleCall(string, string, string) (*http.Response, error)
-	SetHost(string) error
-	SetPort(int)
-	SetUser(string)
-	SetPass(string)
-}
-
 // HTTPCallerInterface is the HTTP implementation for caller
 type HTTPCallerInterface interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
-// HTTPClient Wraps an http.Client with its config
-type HTTPClient struct {
-	config *Config
+// HTTP Wraps an http.Client with its config
+type HTTP struct {
+	Config *Config
 	caller HTTPCallerInterface
 }
 
-// NewHTTPClient is the factory function for HTTPClient
-func NewHTTPClient(config *Config, client HTTPCallerInterface) *HTTPClient {
+// NewHTTP is the factory function for HTTP
+func NewHTTP(config *Config, client HTTPCallerInterface) *HTTP {
 	if client == nil {
 		client = &http.Client{
-			Timeout: config.Timeout(),
+			Timeout: config.Timeout,
 		}
 	}
-	return &HTTPClient{
-		config: config,
+
+	return &HTTP{
+		Config: config,
 		caller: client,
 	}
 }
@@ -47,7 +39,7 @@ func NewHTTPClient(config *Config, client HTTPCallerInterface) *HTTPClient {
 // it relies on the underlying net/http.Client or Injected CallerInterface.
 //
 // Because we have to inject the `Content-Type: application/json`, client.Do is used.
-func (c *HTTPClient) HandleCall(method string, url string, body string) (*http.Response, error) {
+func (c *HTTP) HandleCall(method, url, body string) (*http.Response, error) {
 	var bodyIoReader io.Reader
 	if body != "" {
 		bodyIoReader = strings.NewReader(body)
@@ -61,43 +53,28 @@ func (c *HTTPClient) HandleCall(method string, url string, body string) (*http.R
 	return c.caller.Do(req)
 }
 
-func (c *HTTPClient) createRequest(method string, url string, body io.Reader) (*http.Request, error) {
+func (c *HTTP) createRequest(method string, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
 
-	for key, value := range c.config.headers {
+	for key, value := range c.Config.headers {
 		req.Header.Add(key, value)
 	}
 
-	if (c.config.user != "") && (c.config.pass != "") {
-		req.SetBasicAuth(c.config.user, c.config.pass)
+	if (c.Config.User != "") && (c.Config.Pass != "") {
+		req.SetBasicAuth(c.Config.User, c.Config.Pass)
 	}
 
 	return req, nil
 }
 
-func (c *HTTPClient) fullURL(url string) string {
-	return utils.ConcatStrings(c.config.HTTPAdress(), url)
+func (c *HTTP) fullURL(url string) string {
+	return utils.ConcatStrings(c.Config.HTTPAdress(), url)
 }
 
 // SetHost modifies the target host
-func (c *HTTPClient) SetHost(value string) error {
-	return c.config.SetHost(value)
-}
-
-// SetPort modifies the target port
-func (c *HTTPClient) SetPort(value int) {
-	c.config.SetPort(value)
-}
-
-// SetUser modifies the user (HTTP Basic Auth)
-func (c *HTTPClient) SetUser(value string) {
-	c.config.user = value
-}
-
-// SetPass modifies the password (HTTP Basic Auth)
-func (c *HTTPClient) SetPass(value string) {
-	c.config.pass = value
+func (c *HTTP) SetHost(value string) error {
+	return c.Config.SetHost(value)
 }

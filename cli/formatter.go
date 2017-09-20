@@ -10,31 +10,58 @@ import (
 	"strings"
 )
 
-// Format formats the HTTPResponse to Stdout
-func Format(input *http.Response, verbose bool, interactive bool, writer io.Writer) {
-	content, _ := ioutil.ReadAll(input.Body)
-	var out bytes.Buffer
-	err := json.Indent(&out, content, "", "  ")
+const (
+	methodFormat      = "Method:      "
+	urlFormat         = "URL:         "
+	responseFormat    = "Response:    "
+	contentTypeFormat = "Content-Type:"
+)
 
-	if interactive || verbose {
-		fmt.Fprintf(writer, "Method:       %s\n", strings.ToUpper(input.Request.Method))
-		fmt.Fprintf(writer, "URL:          %s\n", strings.ToLower(input.Request.URL.Path))
-		if !verbose {
-			fmt.Fprintln(writer)
-		}
-	}
-	if verbose || input.Request.Method == "HEAD" {
-		fmt.Fprintln(writer, "Response:    ", input.Status)
-		fmt.Fprintf(writer, "Content-Type: %s\n\n", input.Request.Header["Content-Type"][0])
-	}
-
-	if input.Request.Method == "HEAD" {
-		return
-	}
-
+// Format formats the HTTPResponse to the output io.Writer
+func Format(input *http.Response, verbose bool, interactive bool, output io.Writer) error {
+	content, err := ioutil.ReadAll(input.Body)
 	if err != nil {
-		fmt.Fprintln(writer, strings.TrimSpace(string(content)))
-		return
+		return err
 	}
-	fmt.Fprintln(writer, strings.TrimSpace(out.String()))
+	// Removes any extra spaces the body might be carrying
+	content = []byte(strings.TrimSpace(string(content)))
+
+	var headers = new(bytes.Buffer)
+	if interactive || verbose {
+		headers.WriteString(
+			fmt.Sprintln(methodFormat, strings.ToUpper(input.Request.Method)),
+		)
+		headers.WriteString(
+			fmt.Sprintln(urlFormat, strings.ToLower(input.Request.URL.Path)),
+		)
+	}
+
+	if verbose || input.Request.Method == "HEAD" {
+		headers.WriteString(
+			fmt.Sprintln(responseFormat, input.Status),
+		)
+		headers.WriteString(
+			fmt.Sprintln(contentTypeFormat, input.Request.Header["Content-Type"][0]),
+		)
+	}
+
+	// Print the headers
+	if headers.String() != "" {
+		headers.WriteString(fmt.Sprintln())
+		headers.WriteTo(output)
+	}
+
+	// Print the response content
+	var payload bytes.Buffer
+	err = json.Indent(&payload, content, "", "  ")
+	if err != nil {
+		payload.Write(content)
+	}
+
+	if payload.String() != "" {
+		payload.WriteString("\n")
+		payload.WriteTo(output)
+	}
+
+	return nil
 }

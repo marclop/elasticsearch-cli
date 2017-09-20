@@ -17,14 +17,14 @@ import (
 	"github.com/marclop/elasticsearch-cli/poller"
 )
 
-type mockClient struct {
+type mockCaller struct {
 	content string
 	fail    bool
 	header  http.Header
 	props   map[string]interface{}
 }
 
-func (c *mockClient) HandleCall(string, string, string) (*http.Response, error) {
+func (c *mockCaller) Do(*http.Request) (*http.Response, error) {
 	var err error
 	if c.fail {
 		err = fmt.Errorf("fail")
@@ -45,27 +45,15 @@ func (c *mockClient) HandleCall(string, string, string) (*http.Response, error) 
 	}, err
 }
 
-func (c *mockClient) SetHost(host string) error {
-	c.props["host"] = host
-	return nil
-}
+var defaultConfig = func(c *client.Config, _ error) *client.Config { return c }(
+	client.NewClientConfig("http://localhost", 9200, "user", "pass", 10),
+)
 
-func (c *mockClient) SetPort(port int) {
-	c.props["port"] = port
-}
-func (c *mockClient) SetUser(user string) {
-	c.props["user"] = user
-}
-func (c *mockClient) SetPass(pass string) {
-	c.props["pass"] = pass
-}
-
-func TestInit(t *testing.T) {
+func TestInitialize(t *testing.T) {
 	channel := make(chan []string, 1)
 	type args struct {
 		config *Config
-		client client.Client
-		parser *cli.InputParser
+		client *client.HTTP
 		f      Formatter
 		c      chan []string
 		w      Poller
@@ -79,22 +67,20 @@ func TestInit(t *testing.T) {
 			"InitApplicationSucceeds",
 			args{
 				&Config{
-					false,
-					10,
+					Verbose:      false,
+					PollInterval: 10,
 				},
-				&mockClient{},
-				&cli.InputParser{},
+				client.NewHTTP(defaultConfig, &mockCaller{}),
 				nil,
 				channel,
 				&poller.IndexPoller{},
 			},
 			&Application{
 				config: &Config{
-					false,
-					10,
+					Verbose:      false,
+					PollInterval: 10,
 				},
-				client:       &mockClient{},
-				parser:       &cli.InputParser{},
+				client:       client.NewHTTP(defaultConfig, &mockCaller{}),
 				indexChannel: channel,
 				poller:       &poller.IndexPoller{},
 				formatFunc:   nil,
@@ -104,7 +90,7 @@ func TestInit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Init(tt.args.config, tt.args.client, tt.args.parser, nil, tt.args.c, tt.args.w, nil); !reflect.DeepEqual(got, tt.want) {
+			if got := initialize(tt.args.config, tt.args.client, nil, tt.args.c, tt.args.w, nil); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Init() = %v, want %v", got, tt.want)
 			}
 		})
@@ -114,18 +100,15 @@ func TestInit(t *testing.T) {
 func TestApplication_HandleCli(t *testing.T) {
 	type fields struct {
 		config       *Config
-		client       client.Client
+		client       *client.HTTP
 		format       Formatter
 		indexChannel chan []string
-		parser       *cli.InputParser
 		poller       Poller
 		repl         *readline.Instance
 		output       io.Writer
 	}
 	type args struct {
-		method string
-		url    string
-		body   string
+		input []string
 	}
 	tests := []struct {
 		name    string
@@ -137,23 +120,25 @@ func TestApplication_HandleCli(t *testing.T) {
 			"HandleCliSucceeds",
 			fields{
 				config: &Config{
-					false,
-					10,
+					Verbose:      false,
+					PollInterval: 10,
 				},
-				client: &mockClient{
+				client: client.NewHTTP(defaultConfig, &mockCaller{
 					content: `{"health": "yellow", "status": "open", "index": "elastic", "pri": "1"}`,
 					fail:    false,
 					header: http.Header{
 						"Content-Type": []string{"application/json"},
 					},
-				},
+				}),
 				format: cli.Format,
 				output: &bytes.Buffer{},
 			},
 			args{
-				"GET",
-				"",
-				"",
+				[]string{
+					"GET",
+					"",
+					"",
+				},
 			},
 			false,
 		},
@@ -161,24 +146,26 @@ func TestApplication_HandleCli(t *testing.T) {
 			"HandleCliInteractiveSucceeds",
 			fields{
 				config: &Config{
-					false,
-					10,
+					Verbose:      false,
+					PollInterval: 10,
 				},
-				client: &mockClient{
+				client: client.NewHTTP(defaultConfig, &mockCaller{
 					content: `{"health": "yellow", "status": "open", "index": "elastic", "pri": "1"}`,
 					fail:    false,
 					header: http.Header{
 						"Content-Type": []string{"application/json"},
 					},
-				},
+				}),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
 			},
 			args{
-				"GET",
-				"/",
-				"",
+				[]string{
+					"GET",
+					"/",
+					"",
+				},
 			},
 			false,
 		},
@@ -186,23 +173,25 @@ func TestApplication_HandleCli(t *testing.T) {
 			"HandleCliFailsDueHandleCallFailing",
 			fields{
 				config: &Config{
-					false,
-					10,
+					Verbose:      false,
+					PollInterval: 10,
 				},
-				client: &mockClient{
+				client: client.NewHTTP(defaultConfig, &mockCaller{
 					content: `{"health": "yellow", "status": "open", "index": "elastic", "pri": "1"}`,
 					fail:    true,
 					header: http.Header{
 						"Content-Type": []string{"application/json"},
 					},
-				},
+				}),
 				format: cli.Format,
 				output: &bytes.Buffer{},
 			},
 			args{
-				"GET",
-				"/",
-				"",
+				[]string{
+					"GET",
+					"/",
+					"",
+				},
 			},
 			true,
 		},
@@ -214,12 +203,11 @@ func TestApplication_HandleCli(t *testing.T) {
 				client:       tt.fields.client,
 				formatFunc:   tt.fields.format,
 				indexChannel: tt.fields.indexChannel,
-				parser:       tt.fields.parser,
 				poller:       tt.fields.poller,
 				repl:         tt.fields.repl,
 				output:       tt.fields.output,
 			}
-			if err := app.HandleCli(tt.args.method, tt.args.url, tt.args.body); (err != nil) != tt.wantErr {
+			if err := app.HandleCli(tt.args.input); (err != nil) != tt.wantErr {
 				t.Errorf("Application.HandleCli() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -229,7 +217,7 @@ func TestApplication_HandleCli(t *testing.T) {
 func TestApplication_doSetCommands(t *testing.T) {
 	type fields struct {
 		config       *Config
-		client       client.Client
+		client       *client.HTTP
 		format       Formatter
 		indexChannel chan []string
 		parser       *cli.InputParser
@@ -244,18 +232,18 @@ func TestApplication_doSetCommands(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   client.Client
+		want   *client.HTTP
 	}{
 		{
-			"SetHostIsCalled",
+			"host is modified",
 			fields{
 				config: &Config{
-					false,
-					10,
+					Verbose:      false,
+					PollInterval: 10,
 				},
-				client: &mockClient{
+				client: client.NewHTTP(defaultConfig, &mockCaller{
 					props: make(map[string]interface{}, 1),
-				},
+				}),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -267,22 +255,22 @@ func TestApplication_doSetCommands(t *testing.T) {
 					"http://localhost",
 				},
 			},
-			&mockClient{
+			client.NewHTTP(defaultConfig, &mockCaller{
 				props: map[string]interface{}{
 					"host": "http://localhost",
 				},
-			},
+			}),
 		},
 		{
-			"SetHostIsCalledWithInvalidSchema",
+			"host is not modified due invalid schema",
 			fields{
 				config: &Config{
-					false,
-					10,
+					Verbose:      false,
+					PollInterval: 10,
 				},
-				client: &mockClient{
+				client: client.NewHTTP(defaultConfig, &mockCaller{
 					props: make(map[string]interface{}, 1),
-				},
+				}),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -294,22 +282,22 @@ func TestApplication_doSetCommands(t *testing.T) {
 					"INVALID://localhost",
 				},
 			},
-			&mockClient{
+			client.NewHTTP(defaultConfig, &mockCaller{
 				props: map[string]interface{}{
 					"host": "INVALID://localhost",
 				},
-			},
+			}),
 		},
 		{
-			"SetPortIsCalled",
+			"port is modified",
 			fields{
 				config: &Config{
-					false,
-					10,
+					Verbose:      false,
+					PollInterval: 10,
 				},
-				client: &mockClient{
+				client: client.NewHTTP(defaultConfig, &mockCaller{
 					props: make(map[string]interface{}, 1),
-				},
+				}),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -321,22 +309,22 @@ func TestApplication_doSetCommands(t *testing.T) {
 					"9201",
 				},
 			},
-			&mockClient{
+			client.NewHTTP(defaultConfig, &mockCaller{
 				props: map[string]interface{}{
 					"port": 9201,
 				},
-			},
+			}),
 		},
 		{
-			"SetUserIsCalled",
+			"user is modified",
 			fields{
 				config: &Config{
-					false,
-					10,
+					Verbose:      false,
+					PollInterval: 10,
 				},
-				client: &mockClient{
+				client: client.NewHTTP(defaultConfig, &mockCaller{
 					props: make(map[string]interface{}, 1),
-				},
+				}),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -348,22 +336,22 @@ func TestApplication_doSetCommands(t *testing.T) {
 					"elastic",
 				},
 			},
-			&mockClient{
+			client.NewHTTP(defaultConfig, &mockCaller{
 				props: map[string]interface{}{
 					"user": "elastic",
 				},
-			},
+			}),
 		},
 		{
-			"SetPassIsCalled",
+			"password is modified",
 			fields{
 				config: &Config{
-					false,
-					10,
+					Verbose:      false,
+					PollInterval: 10,
 				},
-				client: &mockClient{
+				client: client.NewHTTP(defaultConfig, &mockCaller{
 					props: make(map[string]interface{}, 1),
-				},
+				}),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -375,11 +363,37 @@ func TestApplication_doSetCommands(t *testing.T) {
 					"elastic",
 				},
 			},
-			&mockClient{
+			client.NewHTTP(defaultConfig, &mockCaller{
 				props: map[string]interface{}{
 					"pass": "elastic",
 				},
+			}),
+		},
+		{
+			"Verbose is modified",
+			fields{
+				config: &Config{
+					Verbose:      false,
+					PollInterval: 10,
+				},
+				client: client.NewHTTP(defaultConfig, &mockCaller{
+					props: make(map[string]interface{}, 1),
+				}),
+				repl:   &readline.Instance{},
+				format: cli.Format,
+				output: &bytes.Buffer{},
 			},
+			args{
+				[]string{
+					"set",
+					"verbose",
+				},
+			},
+			client.NewHTTP(defaultConfig, &mockCaller{
+				props: map[string]interface{}{
+					"verbose": "elastic",
+				},
+			}),
 		},
 	}
 	for _, tt := range tests {
@@ -395,8 +409,8 @@ func TestApplication_doSetCommands(t *testing.T) {
 				output:       tt.fields.output,
 			}
 			app.doSetCommands(tt.args.lineSliced)
-			if !reflect.DeepEqual(app.client, tt.want) {
-				t.Errorf("app.client = %v, want %v", app.client, tt.want)
+			if !reflect.DeepEqual(app.client.Config, tt.want.Config) {
+				t.Errorf("app.client = %v, want %v", app.client.Config, tt.want.Config)
 			}
 		})
 	}

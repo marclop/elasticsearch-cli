@@ -1,8 +1,9 @@
 SHELL := /bin/bash
 GLIDE_PRESENT := $(shell command -v glide 2> /dev/null)
 BINARY := elasticsearch-cli
-VERSION ?= 0.1.1
-INSTALL_PATH ?= /usr/local/bin
+AUTHOR = marclop
+VERSION ?= 0.2.0
+INSTALL_PATH ?= $(GOPATH)/bin
 # Test all major version of ES
 ES_VERSION ?= 1.7 2.4 5.4 5.5
 ES_PORT ?= 9200
@@ -14,6 +15,7 @@ BUILD_ARCHITECTURES ?= "386 amd64"
 BUILD_OUTPUT ?= "pkg/{{.Dir}}_{{.OS}}_{{.Arch}}"
 REPORT_PATH ?= reports
 REPORT_FORMAT ?= html
+COMPLETIONS_FILE ?= $(HOME)/.$(BINARY).auto
 define HELP
 
 $(BINARY) v$(VERSION) Makefile
@@ -60,6 +62,14 @@ endif
 vendor: deps
 	@ echo "-> Installing $(BINARY) dependencies..."
 	@ glide install
+
+.PHONY: docker-build
+docker-build:
+	@ echo "-> Building $(BINARY) inside Docker..."
+	@ docker run --rm \
+	-v $(shell pwd):/go/src/github.com/$(AUTHOR)/$(BINARY) \
+	golang:1.9-alpine \
+	sh -c 'apk --update add curl bash git make && cd /go/src/github.com/$(AUTHOR)/$(BINARY) && make build'
 
 .PHONY: build
 build: deps vendor
@@ -141,7 +151,7 @@ code-quality:
 	@ go get -u github.com/wgliang/goreporter
 	@ rm -rf .glide
 	@ mkdir -p $(REPORT_PATH)
-	@ goreporter -p ../$(BINARY) -e vendor *_test.go -f $(REPORT_FORMAT) -r $(REPORT_PATH)
+	@ goreporter -p ../$(shell basename $(PWD)) -r $(REPORT_PATH) -f $(REPORT_FORMAT) -e ".glide,vendor"
 	@ $$(open $$(make get-quality-report))
 
 .PHONY: get-quality-report

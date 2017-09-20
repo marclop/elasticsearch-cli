@@ -4,18 +4,20 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/chzyer/readline"
 	"github.com/marclop/elasticsearch-cli/cli"
 	"github.com/marclop/elasticsearch-cli/client"
+	"github.com/marclop/elasticsearch-cli/poller"
 )
 
 // Application contains the full application and its dependencies
 type Application struct {
 	config       *Config
-	client       client.Client
+	client       *client.HTTP
 	formatFunc   Formatter
 	output       io.Writer
 	indexChannel chan []string
@@ -26,20 +28,40 @@ type Application struct {
 
 // Poller is the responsible for polling ElasticSearch and retrieving endpoints to autocomplete the CLI
 type Poller interface {
-	Run()
+	// Start the IndexPoller indefinitely, which will get the cluster indexList
+	// And will send the results back to the channel
+	Start()
+	// Stop makes the indexPoller stop querying the Elasticsearch endpoint
+	// additionally closing all of the channels
+	Stop()
 }
 
 // Formatter formats the HTTPResponse to Stdout
-type Formatter func(input *http.Response, verbose bool, interactive bool, writer io.Writer)
+type Formatter func(input *http.Response, verbose bool, interactive bool, writer io.Writer) error
 
-// Init ties all the application pieces together and returns a conveninent *Application struct
-// that allows easy interaction with all the pieces of the application
-func Init(config *Config, client client.Client, p *cli.InputParser, f Formatter, c chan []string, w Poller, o io.Writer) *Application {
+// New creates a new instance of elasticsearch-cli from the passed Config
+func New(config *Config) (*Application, error) {
+	clientConfig, err := client.NewClientConfig(config.Host, config.Port, config.User, config.Pass, config.Timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	httpClient := client.NewHTTP(clientConfig, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	indicesChannel := make(chan []string, 1)
+	indexPoller := poller.NewIndexPoller(httpClient, indicesChannel, config.PollInterval)
+	return initialize(config, httpClient, cli.Format, indicesChannel, indexPoller, os.Stdout), nil
+}
+
+func initialize(config *Config, client *client.HTTP, f Formatter, c chan []string, w Poller, o io.Writer) *Application {
+	log.SetOutput(os.Stderr)
 	return &Application{
 		config:       config,
 		client:       client,
 		formatFunc:   f,
-		parser:       p,
 		indexChannel: c,
 		poller:       w,
 		output:       o,
@@ -48,8 +70,13 @@ func Init(config *Config, client client.Client, p *cli.InputParser, f Formatter,
 
 // HandleCli handles the the interaction between the validated input and
 // remote HTTP calls to the specified host including the call to the JSON formatter
-func (app *Application) HandleCli(method string, url string, body string) error {
-	res, err := app.client.HandleCall(method, url, body)
+func (app *Application) HandleCli(args []string) error {
+	input, err := cli.NewInputParser(args)
+	if err != nil {
+		return err
+	}
+
+	res, err := app.client.HandleCall(input.Method, input.URL, input.Body)
 	if err != nil {
 		return err
 	}
@@ -61,7 +88,7 @@ func (app *Application) HandleCli(method string, url string, body string) error 
 
 func (app *Application) initInteractive() {
 	go app.refreshCompleter()
-	go app.poller.Run()
+	go app.poller.Start()
 	app.repl, _ = readline.NewEx(
 		&readline.Config{
 			Prompt:          "\x1b[34melasticsearch> \x1b[0m",
@@ -76,16 +103,19 @@ func (app *Application) initInteractive() {
 func (app *Application) refreshCompleter() {
 	for {
 		select {
-		case indices := <-app.indexChannel:
+		case indices, ok := <-app.indexChannel:
+			if !ok {
+				return
+			}
 			app.repl.Config.AutoComplete = cli.AssembleIndexCompleter(indices)
 		}
 	}
 }
 
 // Interactive runs the application like a readline / REPL
-func (app *Application) Interactive() {
+func (app *Application) Interactive() error {
 	app.initInteractive()
-	defer app.repl.Close()
+	defer app.poller.Stop()
 	for {
 		line, err := app.repl.Readline()
 		if err == readline.ErrInterrupt {
@@ -95,7 +125,7 @@ func (app *Application) Interactive() {
 				continue
 			}
 		} else if err == io.EOF {
-			return
+			break
 		}
 
 		if len(line) == 0 {
@@ -104,50 +134,46 @@ func (app *Application) Interactive() {
 
 		cleanLine := strings.TrimSpace(line)
 		if cleanLine == "exit" || cleanLine == "quit" {
-			return
+			break
 		}
 
-		lineSliced := strings.Fields(cleanLine)
-		if lineSliced[0] == "set" {
-			app.doSetCommands(lineSliced)
+		input := strings.Fields(cleanLine)
+		if input[0] == "set" {
+			app.doSetCommands(input)
 			continue
 		}
 
-		app.parser, err = cli.NewInputParser(lineSliced)
-		if err != nil {
-			log.Print("[ERROR]: ", err)
-			continue
-		}
-
-		err = app.HandleCli(app.parser.Method, app.parser.URL, app.parser.Body)
-		if err != nil {
+		if err := app.HandleCli(input); err != nil {
 			log.Print("[ERROR]: ", err)
 		}
-
 	}
+
+	return app.repl.Close()
 }
 
-func (app *Application) doSetCommands(lineSliced []string) {
-	if len(lineSliced) == 3 {
-		switch lineSliced[1] {
+func (app *Application) doSetCommands(input []string) {
+	if len(input) == 3 {
+		switch input[1] {
 		case "host":
-			err := app.client.SetHost(lineSliced[2])
+			err := app.client.SetHost(input[2])
 			if err != nil {
 				log.Print("[ERROR]: ", err)
 			}
 		case "port":
-			port, err := strconv.Atoi(lineSliced[2])
+			port, err := strconv.Atoi(input[2])
 			if err != nil {
-				log.Print(lineSliced[2], " is not a valid port")
+				log.Print(input[2], " is not a valid port")
 			} else {
-				app.client.SetPort(port)
+				app.client.Config.HostPort.Port = port
 			}
 		case "user":
-			app.client.SetUser(lineSliced[2])
+			app.client.Config.User = input[2]
 		case "pass":
-			app.client.SetPass(lineSliced[2])
+			app.client.Config.Pass = input[2]
 		}
-	} else if (len(lineSliced) == 2) && (lineSliced[1] == "verbose") {
+	}
+
+	if (len(input) == 2) && (input[1] == "verbose") {
 		app.config.Verbose = true
 	}
 }

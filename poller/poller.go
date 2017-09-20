@@ -8,15 +8,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/marclop/elasticsearch-cli/client"
 	"github.com/marclop/elasticsearch-cli/elasticsearch"
 )
 
 const defaultPollingEndpoint = "/_cat/indices"
 
+// client abstracts the real client used by the poller
+type client interface {
+	HandleCall(method, url, body string) (*http.Response, error)
+}
+
 // IndexPoller polls the ElasticSearch API to discover which indices exist
 type IndexPoller struct {
-	client         client.Client
+	client         client
 	endpoint       string
 	channel        chan []string
 	pollRate       time.Duration
@@ -24,7 +28,7 @@ type IndexPoller struct {
 }
 
 // NewIndexPoller is the factory to create a new IndexPoller
-func NewIndexPoller(client client.Client, c chan []string, poll int) *IndexPoller {
+func NewIndexPoller(client client, c chan []string, poll int) *IndexPoller {
 	return &IndexPoller{
 		channel:        c,
 		client:         client,
@@ -34,9 +38,9 @@ func NewIndexPoller(client client.Client, c chan []string, poll int) *IndexPolle
 	}
 }
 
-// Run the IndexPoller indefinitely, which will get the cluster indexList
+// Start the IndexPoller indefinitely, which will get the cluster indexList
 // And will send the results back to the channel
-func (w *IndexPoller) Run() {
+func (w *IndexPoller) Start() {
 	w.channel <- w.run()
 	ticker := time.NewTicker(w.pollRate)
 	for {
@@ -51,7 +55,8 @@ func (w *IndexPoller) Run() {
 	}
 }
 
-// Stop closes the channels
+// Stop makes the indexPoller stop querying the Elasticsearch endpoint
+// additionally closing all of the channels
 func (w *IndexPoller) Stop() {
 	defer close(w.controlChannel)
 	w.controlChannel <- true

@@ -8,8 +8,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/marclop/elasticsearch-cli/client"
 )
 
 type mockClient struct {
@@ -18,7 +16,7 @@ type mockClient struct {
 	header  http.Header
 }
 
-func (c *mockClient) HandleCall(string, string, string) (*http.Response, error) {
+func (c *mockClient) HandleCall(_, _, _ string) (*http.Response, error) {
 	var err error
 	if c.fail {
 		err = fmt.Errorf("fail")
@@ -36,18 +34,10 @@ func (c *mockClient) HandleCall(string, string, string) (*http.Response, error) 
 	}, err
 }
 
-func (c *mockClient) SetHost(string) error {
-	return nil
-}
-
-func (c *mockClient) SetPort(int)    {}
-func (c *mockClient) SetUser(string) {}
-func (c *mockClient) SetPass(string) {}
-
 func TestNewIndexPoller(t *testing.T) {
 	channel := make(chan []string, 1)
 	type args struct {
-		client client.Client
+		client client
 		c      chan []string
 		poll   int
 	}
@@ -86,7 +76,7 @@ func TestNewIndexPoller(t *testing.T) {
 func TestIndexPoller_run(t *testing.T) {
 	channel := make(chan []string, 1)
 	type fields struct {
-		client   client.Client
+		client   client
 		endpoint string
 		channel  chan []string
 		pollRate time.Duration
@@ -200,9 +190,9 @@ yellow open   wat          s0uzswacS2-jPJJgKb8r7w   5   1          0            
 	}
 }
 
-func TestIndexPoller_Run(t *testing.T) {
+func TestIndexPollerStart(t *testing.T) {
 	type fields struct {
-		client   client.Client
+		client   client
 		endpoint string
 		pollRate time.Duration
 	}
@@ -242,11 +232,11 @@ yellow open   wat          s0uzswacS2-jPJJgKb8r7w   5   1          0            
 				pollRate:       tt.fields.pollRate,
 				controlChannel: controlChannel,
 			}
-			go w.Run()
+			go w.Start()
 			got := <-w.channel
 			w.Stop()
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("IndexPoller.Run() = %v, want %v", got, tt.want)
+				t.Errorf("IndexPoller.Start() = %v, want %v", got, tt.want)
 			}
 		})
 	}
