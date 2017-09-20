@@ -26,7 +26,7 @@ func TestNewClient(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want Client
+		want *HTTP
 	}{
 		{
 			"NewClientHasMockClientInjected",
@@ -34,7 +34,7 @@ func TestNewClient(t *testing.T) {
 				config: &Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
 				client: &emptyMockCaller{},
 			},
-			NewHTTPClient(
+			NewHTTP(
 				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
 				&emptyMockCaller{},
 			),
@@ -45,7 +45,7 @@ func TestNewClient(t *testing.T) {
 				config: &Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
 				client: nil,
 			},
-			NewHTTPClient(
+			NewHTTP(
 				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
 				nil,
 			),
@@ -53,7 +53,7 @@ func TestNewClient(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewHTTPClient(tt.args.config, tt.args.client); !reflect.DeepEqual(got, tt.want) {
+			if got := NewHTTP(tt.args.config, tt.args.client); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewClient() = %v, want %v", got, tt.want)
 			}
 		})
@@ -164,8 +164,8 @@ func TestClient_HandleCall(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &HTTPClient{
-				config: tt.fields.config,
+			c := &HTTP{
+				Config: tt.fields.config,
 				caller: tt.fields.caller,
 			}
 			got, err := c.HandleCall(tt.args.method, tt.args.url, tt.args.body)
@@ -236,8 +236,8 @@ func TestClient_createRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &HTTPClient{
-				config: tt.fields.config,
+			c := &HTTP{
+				Config: tt.fields.config,
 				caller: tt.fields.caller,
 			}
 			got, err := c.createRequest(tt.args.method, tt.args.url, tt.args.body)

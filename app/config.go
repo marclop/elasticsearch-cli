@@ -2,8 +2,13 @@ package app
 
 // Config for elasticsearch-cli Application
 type Config struct {
-	Verbose      bool
-	PollInterval int
+	User         string `mapstructure:"user"`
+	Pass         string `mapstructure:"pass"`
+	Host         string `mapstructure:"host"`
+	Port         int    `mapstructure:"port"`
+	Verbose      bool   `mapstructure:"verbose"`
+	PollInterval int    `mapstructure:"poll-interval"`
+	Timeout      int    `mapstructure:"timeout"`
 }
 
 // NewApplicationConfig acts as the Factory for the elasticsearch-cli config

@@ -7,11 +7,11 @@ import (
 	"github.com/marclop/elasticsearch-cli/utils"
 )
 
-const (
-	defaultURL = "/"
-)
+const defaultURL = "/"
 
-var supportedMethods = []string{
+// SupportedMethods is the list of defined suported HTTP verbs that
+// the application supports, it's also used for bash autocompletion
+var SupportedMethods = []string{
 	"GET",
 	"HEAD",
 	"DELETE",
@@ -57,7 +57,7 @@ func NewInputParser(input []string) (*InputParser, error) {
 
 // Validate makes sure that the parsed Method and URL are valid
 func (p *InputParser) Validate() error {
-	if !utils.StringInSlice(p.Method, supportedMethods) {
+	if !utils.StringInSlice(p.Method, SupportedMethods) {
 		return fmt.Errorf("Method \"%s\" is not supported", p.Method)
 	}
 	p.ensureURLIsPrefixed()

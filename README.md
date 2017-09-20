@@ -4,7 +4,7 @@
 
 `elasticsearch-cli` provides a Kibana console-like interface to interact with ElasticSearch
 
-# Features
+## Features
 
 * Cli interface, this is a one-off execution
 * Interactive console-like execution
@@ -12,14 +12,14 @@
 * Persistent history
 * Authentication support
 
-# Installation
+## Installation
 
 To install `elasticsearch-cli` you can either grab the latest binaries in the [release page](https://github.com/marclop/elasticsearch-cli/releases)
 or install the latest and most recent commit from the source code
 
-## Latest build
+### Latest build
 
-`elasticsearch-cli` will be placed in /usr/local/bin/elasticsearch-cli
+`elasticsearch-cli` will be placed in ${GOPATH}/bin/elasticsearch-cli
 
 ```sh
 git clone https://github.com/marclop/elasticsearch-cli
@@ -27,36 +27,97 @@ cd elasticsearch-cli
 make install
 ```
 
-# Default configuration
+## Default configuration
 
 There are a few configuration flags you can pass to `elasticsearch-cli`:
 
+```console
+$ elasticsearch-cli --help
+elasticsearch-cli provides a REPL console-like interface to interact with Elasticsearch
+
+Usage:
+  elasticsearch-cli [flags]
+  elasticsearch-cli [command]
+
+Available Commands:
+  delete      Performs a DELETE operation against the remote endpoint
+  get         Performs a GET operation against the remote endpoint
+  head        Performs a HEAD operation against the remote endpoint
+  help        Help about any command
+  post        Performs a POST operation against the remote endpoint
+  put         Performs a PUT operation against the remote endpoint
+  version     prints the version
+
+Flags:
+      --cluster string      config name, used to have multiple clusters configured in $HOME/.elasticsearch-cli/<env> (default "default")
+  -h, --help                help for elasticsearch-cli
+      --host string         default elasticsearch URL (default "http://localhost")
+  -p, --pass string         password to use to authenticate (If not specified, will look for ES_PASS environment variable)
+      --poll-interval int   interval on which to poll Elasticsearch to provide index autocompletion (default 10)
+      --port int            default elasticsearch port to use (default 9200)
+  -t, --timeout int         http client timeout to the remote endpoint (default 10)
+  -u, --user string         username to use to authenticate (If not specified look for ES_USER environment variable)
+  -v, --verbose             enable verbose mode
+
+Use "elasticsearch-cli [command] --help" for more information about a command.
+```
+
+## Configuration Settings and Precedence
+
+In order for `elasticsearch-cli` to be able to comunicate with an Elasticsearch cluster, it needs to have a set of configuration parameters set, which could either be defined in a configuration file, using environment variables or at runtime or using the cli's global flags. The hirearchy is as follows listed from higher precedence to lower:
+
+1. Command line flags (`--host`, `--user`, `--pass`, `--verbose`, etc).
+2. Environment variables.
+3. Shared configuration file (`$HOME/.elasticsearch-cli/default.<json|toml|yaml|hcl>`).
+
+
+## Configuration variables
+
+Before you can start calling your Elasticsearch from the binary, you will need to configure it. Here's an example `YAML` configuration file (`$HOME/.elasticsearch-cli/default.yaml`) that will effectively point and configure the binary for Elastic Cloud:
+
+```yaml
+host: https://9a980720ff16d55e3507bfc875551626.us-east-1.aws.found.io:9243
+region: us-east-1
+user: marc
+pass: mypass
+```
+
+You could also specify the same settings using environment variables, or to override some settings of the `YAML` file, to do you'll need to prefix the configuration parameter with `ES_` and capitalize the setting, i.e. `ES_HOST` or `ES_USER`.
+
 ```sh
-$ elasticsearch-cli -help
-Usage of elasticsearch-cli:
-  -host string
-    	Set the ElasticSearch host url (default "http://localhost")
-  -pass string
-    	Password for HTTP basic auth
-  -poll int
-    	Set the poll interval for index autodiscovery (default 10)
-  -port int
-    	Set the Elasticsearch Port (default 9200)
-  -timeout int
-    	Set the HTTP client timeout (default 10)
-  -user string
-    	Username for HTTP basic auth
-  -verbose
-    	Verbose request/response information
+export ES_CONFIG=mycluster
+```
+
+Last but not least, you can override any of the settings using the CLI flags.
+
+```sh
+elasticsearch-cli --config mycluster <COMMAND>
+```
+
+## Multple configuration support
+
+`elasticsearch-cli` supports the notion of having multiple cluster configuration files out of the box. It uses those to manage credentials and settings.
+By default it will use `$HOME/.elasticsearch-cli/default.<json|toml|yaml|hcl>`, but when the `--config` flag is specified, it will use the `--config` specified value as the file name inside `$HOME/.elasticsearch-cli`:
+
+```console
+# Default behaviour
+$ elasticsearch-cli version
+Using config file: /Users/marc/.elasticsearch-cli/default.yaml
+[...]
+
+# when an environment is specified, the configuration file used will change
+$ elasticsearch-cli version --config cluster
+Using config file: /Users/marc/.elasticsearch-cli/cluster.yaml
+[...]
 ```
 
 # Usage
 
-`elasticsearch-cli`'s usage is very intuitive, the execution is split between non-interactive and interactive, which are composed by 3 request arguments:
+`elasticsearch-cli`'s usage is very intuitive, the execution is split between non-interactive and interactive, which is composed by 3 request arguments:
 
 1. Method
 2. URL
-3. Body of the request
+3. Body
 
 Non-interactive example:
 
@@ -128,7 +189,7 @@ $ elasticsearch-cli GET _cat
 
 ```sh
 $ elasticsearch-cli -verbose
-Elasticsearch-cli> GET
+elasticsearch> GET
 Method:       GET
 URL:          /
 Response:     200 OK
@@ -147,9 +208,9 @@ Content-Type: application/json
   },
   "tagline": "You Know, for Search"
 }
-Elasticsearch-cli> exit
+elasticsearch> exit
 $ elasticsearch-cli
-Elasticsearch-cli> GET
+elasticsearch> GET
 Method:       GET
 URL:          /
 
@@ -166,7 +227,7 @@ URL:          /
   },
   "tagline": "You Know, for Search"
 }
-Elasticsearch-cli> exit
+elasticsearch> exit
 ```
 
 ### Change configuration
@@ -175,7 +236,7 @@ While in interactive mode you an choose to change the application's configuratio
 
 ```sh
 $ elasticsearch-cli
-Elasticsearch-cli> get
+elasticsearch> get
 Method:       GET
 URL:          /
 
@@ -192,8 +253,8 @@ URL:          /
   },
   "tagline": "You Know, for Search"
 }
-Elasticsearch-cli> set port 9201
-Elasticsearch-cli> get
+elasticsearch> set port 9201
+elasticsearch> get
 Method:       GET
 URL:          /
 
@@ -210,7 +271,7 @@ URL:          /
   },
   "tagline": "You Know, for Search"
 }
-Elasticsearch-cli> exit
+elasticsearch> exit
 ```
 
 ## Usage with jq
@@ -267,13 +328,5 @@ ok  	github.com/marclop/elasticsearch-cli	3.566s
 -> Killing Docker container elasticsearch-cli_es_5.4
 ```
 
-# TODOs
-
-- [X] REPL Auto-discover indices
-- [X] Use logger
-- [X] Create Unit tests
-- [X] Acceptance tests
-- [ ] Improve help Flag
-- [ ] Configuration files
-- [ ] CI
-- [ ] Bulk API
+### SEE ALSO
+* [elasticsearch-cli docs](./docs/elasticsearch-cli.md)

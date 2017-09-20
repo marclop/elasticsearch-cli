@@ -168,10 +168,10 @@ func TestConfig_HTTPAdress(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Config{
-				hostPort: tt.fields.hostPort,
-				user:     tt.fields.user,
-				pass:     tt.fields.pass,
-				timeout:  tt.fields.timeout,
+				HostPort: tt.fields.hostPort,
+				User:     tt.fields.user,
+				Pass:     tt.fields.pass,
+				Timeout:  tt.fields.timeout,
 				headers:  tt.fields.headers,
 			}
 			if got := c.HTTPAdress(); got != tt.want {
@@ -236,17 +236,17 @@ func TestConfig_SetHost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Config{
-				hostPort: tt.fields.hostPort,
-				user:     tt.fields.user,
-				pass:     tt.fields.pass,
-				timeout:  tt.fields.timeout,
+				HostPort: tt.fields.hostPort,
+				User:     tt.fields.user,
+				Pass:     tt.fields.pass,
+				Timeout:  tt.fields.timeout,
 				headers:  tt.fields.headers,
 			}
 			if err := c.SetHost(tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("Config.SetHost() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if !tt.wantErr && c.hostPort.Host != tt.args.value {
-				t.Errorf("Config.SetHost() = %s, want %s", c.hostPort.Host, tt.args.value)
+			if !tt.wantErr && c.HostPort.Host != tt.args.value {
+				t.Errorf("Config.SetHost() = %s, want %s", c.HostPort.Host, tt.args.value)
 			}
 		})
 	}

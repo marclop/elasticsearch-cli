@@ -2,12 +2,20 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
 )
+
+func encodeData(p string) string {
+	var v bytes.Buffer
+	json.Indent(&v, []byte(p), "", "  ")
+	v.WriteString("\n")
+	return v.String()
+}
 
 func TestFormat(t *testing.T) {
 	type args struct {
@@ -25,7 +33,8 @@ func TestFormat(t *testing.T) {
 			"FormatSucceeds",
 			args{
 				&http.Response{
-					Body: ioutil.NopCloser(strings.NewReader("MyPlainTextInput")),
+					Body:   ioutil.NopCloser(strings.NewReader("MyPlainTextInput")),
+					Status: "200 OK",
 					Request: &http.Request{
 						Method: "GET",
 					},
@@ -41,7 +50,8 @@ func TestFormat(t *testing.T) {
 			"FormatSucceedsWithJSONResponse",
 			args{
 				&http.Response{
-					Body: ioutil.NopCloser(strings.NewReader(`{"a":"b"}`)),
+					Body:   ioutil.NopCloser(strings.NewReader(`{"a":"b"}`)),
+					Status: "200 OK",
 					Request: &http.Request{
 						Method: "GET",
 					},
@@ -50,10 +60,7 @@ func TestFormat(t *testing.T) {
 				false,
 				&bytes.Buffer{},
 			},
-			`{
-  "a": "b"
-}
-`,
+			encodeData(`{"a":"b"}`),
 		},
 		{
 			"FormatSucceedsWithHEADMethod",
@@ -65,6 +72,9 @@ func TestFormat(t *testing.T) {
 						Method: "HEAD",
 						Header: http.Header{
 							"Content-Type": []string{"application/json"},
+						},
+						URL: &url.URL{
+							Path: "/",
 						},
 					},
 				},
@@ -126,7 +136,6 @@ Content-Type: application/json
 			},
 			`Method:       HEAD
 URL:          /
-
 Response:     200 OK
 Content-Type: application/json
 
