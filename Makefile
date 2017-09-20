@@ -95,7 +95,7 @@ install: _set_build_current_arch build
 release: build
 	@ go get -u github.com/tcnksm/ghr
 	@ echo "-> Publishing $(BINARY) to GitHub..."
-	@ ghr -u elastic $(VERSION) pkg
+	@ ghr -u $(AUTHOR) $(VERSION) pkg
 
 .PHONY: start-es
 start-es:

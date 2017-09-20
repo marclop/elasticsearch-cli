@@ -1,21 +1,18 @@
 sudo: required
 dist: trusty
 services:
-  - docker
-
+- docker
 language: go
-
 go:
-  - 1.9
-
-# Make sure project can also be built on travis for clones of the repo
+- 1.9
 go_import_path: github.com/marclop/elasticsearch-cli
-
 install:
-  - make vendor
-
+- make vendor
 script:
-  - make test
-
+- make test
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+- bash <(curl -s https://codecov.io/bash)
+notifications:
+  email: false
+  slack:
+    secure: VMlgNGqmL8sjZEuqszbkdugTYUpFQyTJ0VgSYF3eIrCu4aINr3P53PWYVzHoqMBmrxHUzzkug7g5yHOhcyQE7yoBcqU5NMRTch6X3OU56yEJdeY6uyYyXpdejBBfWRQQiOBsVxa1oaXK/na0SXj58H/lz8N7RFs3bAnT7IbIVLADzSGYe1GvLWLQxiGgi2MUf+pEqgea7gEg0ZnaVZFY5AN+v7sbyCd6SlCt7QB5jagy9a+RXZw9pdxCBiQwi7nu65GNmijIH0zAJLsgAhPRX/QpQg7MIOFiFkKPHXNMe8EIiOfuucsuaJUL7YVv8hREccKQeqrf/BOUARa3kp5kQutD3De8r4gITYHUvWNIO15KjZeIU142fzV8B6m6cLfLGbUcK2Wa1mgZ/DngA3iX9I+wJVW2v4t+1h/ei9v86hJ/ibMfJyASNOAJAfkcv4BJcGv4zxQXB01qMeuxXH7fifyOXNZxCJBpPjJi+ZVvo3qc8jAZYIakWnq4Zd9h0ouqLkmV6YjHFcoL0XBWwdJqZhked/Cef8vYGZinZRFwMYKW+U+dX3kGtRrpIj5iWmvqAAD7yoaCJlkmBth57zEdvzNqz6jUjnFtGlpDcesmYSJ1/ceUbL2MHJQ2OS8x/sVY0UCW4oenrUPw1WNC/8Va855W4UKJEd92mzWZL5A5Lpo=
