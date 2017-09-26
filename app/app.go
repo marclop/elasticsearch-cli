@@ -46,6 +46,12 @@ func New(config *Config) (*Application, error) {
 		return nil, err
 	}
 
+	if config.Headers != nil {
+		for header, value := range config.Headers {
+			clientConfig.SetHeader(header, value)
+		}
+	}
+
 	httpClient := client.NewHTTP(clientConfig, nil)
 	if err != nil {
 		return nil, err
@@ -82,8 +88,7 @@ func (app *Application) HandleCli(args []string) error {
 	}
 	defer res.Body.Close()
 
-	app.formatFunc(res, app.config.Verbose, app.repl != nil, app.output)
-	return err
+	return app.formatFunc(res, app.config.Verbose, app.repl != nil, app.output)
 }
 
 func (app *Application) initInteractive() {

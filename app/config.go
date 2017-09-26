@@ -9,11 +9,5 @@ type Config struct {
 	Verbose      bool   `mapstructure:"verbose"`
 	PollInterval int    `mapstructure:"poll-interval"`
 	Timeout      int    `mapstructure:"timeout"`
-}
-
-// NewApplicationConfig acts as the Factory for the elasticsearch-cli config
-func NewApplicationConfig(verbose bool) *Config {
-	return &Config{
-		Verbose: verbose,
-	}
+	Headers      map[string]string
 }
