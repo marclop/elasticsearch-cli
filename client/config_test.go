@@ -8,11 +8,12 @@ import (
 
 func TestNewClientConfig(t *testing.T) {
 	type args struct {
-		host    string
-		port    int
-		user    string
-		pass    string
-		timeout int
+		host     string
+		port     int
+		user     string
+		pass     string
+		timeout  int
+		insecure bool
 	}
 	tests := []struct {
 		name    string
@@ -28,6 +29,7 @@ func TestNewClientConfig(t *testing.T) {
 				"",
 				"",
 				10,
+				false,
 			},
 			&Config{
 				&hostPort{"http://localhost", 9200},
@@ -35,6 +37,7 @@ func TestNewClientConfig(t *testing.T) {
 				"",
 				time.Duration(10 * time.Second),
 				defaultClientHeaders,
+				false,
 			},
 			false,
 		},
@@ -46,6 +49,7 @@ func TestNewClientConfig(t *testing.T) {
 				"",
 				"",
 				10,
+				false,
 			},
 			nil,
 			true,
@@ -58,6 +62,7 @@ func TestNewClientConfig(t *testing.T) {
 				"",
 				"",
 				10,
+				false,
 			},
 			&Config{
 				&hostPort{"http://localhost", 9201},
@@ -65,13 +70,14 @@ func TestNewClientConfig(t *testing.T) {
 				"",
 				time.Duration(10 * time.Second),
 				defaultClientHeaders,
+				false,
 			},
 			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewClientConfig(tt.args.host, tt.args.port, tt.args.user, tt.args.pass, tt.args.timeout)
+			got, err := NewClientConfig(tt.args.host, tt.args.port, tt.args.user, tt.args.pass, tt.args.timeout, tt.args.insecure)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewClientConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return

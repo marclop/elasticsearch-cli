@@ -31,22 +31,22 @@ func TestNewClient(t *testing.T) {
 		{
 			"NewClientHasMockClientInjected",
 			args{
-				config: &Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
+				config: &Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
 				client: &emptyMockCaller{},
 			},
 			NewHTTP(
-				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
+				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
 				&emptyMockCaller{},
 			),
 		},
 		{
 			"NewClientHaNoInjections",
 			args{
-				config: &Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
+				config: &Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
 				client: nil,
 			},
 			NewHTTP(
-				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
+				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
 				nil,
 			),
 		},
@@ -80,7 +80,7 @@ func TestClient_HandleCall(t *testing.T) {
 		{
 			"HandleCallHTTPByEmptyMockCaller",
 			fields{
-				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
+				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
 				&emptyMockCaller{},
 			},
 			args{
@@ -94,7 +94,7 @@ func TestClient_HandleCall(t *testing.T) {
 		{
 			"HandleCallHTTPSByEmptyMockCaller",
 			fields{
-				&Config{&hostPort{"https://localhost", 9200}, "", "", time.Duration(10), nil},
+				&Config{&hostPort{"https://localhost", 9200}, "", "", time.Duration(10), nil, false},
 				&emptyMockCaller{},
 			},
 			args{
@@ -108,7 +108,7 @@ func TestClient_HandleCall(t *testing.T) {
 		{
 			"HandleCallWithBodyByEmptyMockCaller",
 			fields{
-				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
+				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
 				&emptyMockCaller{},
 			},
 			args{
@@ -122,7 +122,7 @@ func TestClient_HandleCall(t *testing.T) {
 		{
 			"HandleCallWithHeadersByEmptyMockCaller",
 			fields{
-				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), map[string]string{"Content-Type": "application/json"}},
+				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), map[string]string{"Content-Type": "application/json"}, false},
 				&emptyMockCaller{},
 			},
 			args{
@@ -136,7 +136,7 @@ func TestClient_HandleCall(t *testing.T) {
 		{
 			"HandleCallWithAuthAndHeadersByEmptyMockCaller",
 			fields{
-				&Config{&hostPort{"http://localhost", 9200}, "marc", "marc", time.Duration(10), map[string]string{"Content-Type": "application/json"}},
+				&Config{&hostPort{"http://localhost", 9200}, "marc", "marc", time.Duration(10), map[string]string{"Content-Type": "application/json"}, false},
 				&emptyMockCaller{},
 			},
 			args{
@@ -150,7 +150,7 @@ func TestClient_HandleCall(t *testing.T) {
 		{
 			"HandleCallWithInvalidMethodByEmptyMockCaller",
 			fields{
-				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
+				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
 				&emptyMockCaller{},
 			},
 			args{
@@ -200,7 +200,7 @@ func TestClient_createRequest(t *testing.T) {
 		{
 			"createRequestWithCorrectMethod",
 			fields{
-				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
+				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
 				&emptyMockCaller{},
 			},
 			args{
@@ -222,7 +222,7 @@ func TestClient_createRequest(t *testing.T) {
 		{
 			"createRequestWithIncorrectMethod",
 			fields{
-				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil},
+				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
 				&emptyMockCaller{},
 			},
 			args{

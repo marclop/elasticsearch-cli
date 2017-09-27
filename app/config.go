@@ -9,5 +9,6 @@ type Config struct {
 	Verbose      bool   `mapstructure:"verbose"`
 	PollInterval int    `mapstructure:"poll-interval"`
 	Timeout      int    `mapstructure:"timeout"`
+	Insecure     bool   `mapstructure:"insecure"`
 	Headers      map[string]string
 }

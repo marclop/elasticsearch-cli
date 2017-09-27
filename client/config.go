@@ -21,6 +21,7 @@ type Config struct {
 	Pass     string
 	Timeout  time.Duration
 	headers  map[string]string
+	insecure bool
 }
 
 type hostPort struct {
@@ -31,7 +32,7 @@ type hostPort struct {
 // NewClientConfig handles the parameters that will be used in the HTTP Client
 // If a socket is passed as a URL (http://<host>:<port>), the complex URL will prevail
 // from the passed port
-func NewClientConfig(host string, port int, user string, pass string, timeout int) (*Config, error) {
+func NewClientConfig(host string, port int, user string, pass string, timeout int, insecure bool) (*Config, error) {
 	hp, err := newHostPortString(host, port)
 	if err != nil {
 		return nil, err
@@ -43,6 +44,7 @@ func NewClientConfig(host string, port int, user string, pass string, timeout in
 		Pass:     pass,
 		Timeout:  time.Duration(timeout) * time.Second,
 		headers:  defaultClientHeaders,
+		insecure: insecure,
 	}, nil
 }
 
