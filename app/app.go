@@ -41,7 +41,7 @@ type Formatter func(input *http.Response, verbose bool, interactive bool, writer
 
 // New creates a new instance of elasticsearch-cli from the passed Config
 func New(config *Config) (*Application, error) {
-	clientConfig, err := client.NewClientConfig(config.Host, config.Port, config.User, config.Pass, config.Timeout)
+	clientConfig, err := client.NewClientConfig(config.Host, config.Port, config.User, config.Pass, config.Timeout, config.Insecure)
 	if err != nil {
 		return nil, err
 	}

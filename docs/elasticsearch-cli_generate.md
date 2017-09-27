@@ -1,11 +1,11 @@
 ## elasticsearch-cli generate
 
-Generates elasticsearch-cli completions and docs
+Generates elasticsearch-cli docs
 
 ### Synopsis
 
 
-Generates elasticsearch-cli completions and docs
+Generates elasticsearch-cli docs
 
 ```
 elasticsearch-cli generate [flags]
@@ -22,6 +22,7 @@ elasticsearch-cli generate [flags]
 ```
       --cluster string      config name, used to have multiple clusters configured in $HOME/.elasticsearch-cli/<env> (default "default")
       --host string         default elasticsearch URL (default "http://localhost")
+      --insecure            skip tls certificate verification (warning: use for testing or development onlu)
   -p, --pass string         password to use to authenticate (If not specified, will look for ES_PASS environment variable)
       --poll-interval int   interval on which to poll Elasticsearch to provide index autocompletion (default 10)
       --port int            default elasticsearch port to use (default 9200)

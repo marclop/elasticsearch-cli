@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"io"
 	"net/http"
 	"strings"
@@ -22,8 +23,17 @@ type HTTP struct {
 // NewHTTP is the factory function for HTTP
 func NewHTTP(config *Config, client HTTPCallerInterface) *HTTP {
 	if client == nil {
+		transport := http.DefaultTransport.(*http.Transport)
+		if transport.TLSClientConfig == nil {
+			transport.TLSClientConfig = &tls.Config{
+				InsecureSkipVerify: config.insecure,
+			}
+		} else {
+			transport.TLSClientConfig.InsecureSkipVerify = config.insecure
+		}
 		client = &http.Client{
-			Timeout: config.Timeout,
+			Timeout:   config.Timeout,
+			Transport: transport,
 		}
 	}
 

@@ -68,6 +68,7 @@ func init() {
 	RootCmd.PersistentFlags().StringP("user", "u", "", "username to use to authenticate (If not specified look for ES_USER environment variable)")
 	RootCmd.PersistentFlags().StringP("pass", "p", "", "password to use to authenticate (If not specified, will look for ES_PASS environment variable)")
 	RootCmd.PersistentFlags().BoolP("verbose", "v", false, "enable verbose mode")
+	RootCmd.PersistentFlags().Bool("insecure", false, "skip tls certificate verification (warning: use for testing or development onlu)")
 	RootCmd.PersistentFlags().Int("poll-interval", 10, "interval on which to poll Elasticsearch to provide index autocompletion")
 	RootCmd.PersistentFlags().IntP("timeout", "t", 10, "http client timeout to the remote endpoint")
 	viper.BindPFlags(RootCmd.PersistentFlags())

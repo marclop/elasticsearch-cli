@@ -46,7 +46,7 @@ func (c *mockCaller) Do(*http.Request) (*http.Response, error) {
 }
 
 var defaultConfig = func(c *client.Config, _ error) *client.Config { return c }(
-	client.NewClientConfig("http://localhost", 9200, "user", "pass", 10),
+	client.NewClientConfig("http://localhost", 9200, "user", "pass", 10, false),
 )
 
 func TestInitialize(t *testing.T) {
