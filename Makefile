@@ -5,7 +5,7 @@ AUTHOR = marclop
 VERSION ?= 0.2.0
 INSTALL_PATH ?= $(GOPATH)/bin
 # Test all major version of ES
-ES_VERSION ?= 1.7 2.4 5.4 5.5
+ES_VERSION ?= 1.7 2.4 5.4 5.5 5.6
 ES_PORT ?= 9200
 ES_CONTAINER_NAME ?= elasticsearch-cli_es
 ES_IMAGE ?= elasticsearch

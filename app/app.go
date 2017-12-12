@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -11,8 +12,27 @@ import (
 	"github.com/chzyer/readline"
 	"github.com/marclop/elasticsearch-cli/cli"
 	"github.com/marclop/elasticsearch-cli/client"
+	"github.com/marclop/elasticsearch-cli/elasticsearch"
 	"github.com/marclop/elasticsearch-cli/poller"
 )
+
+const (
+	// DefaultPrompt is used when the cluster status cannot be retrieved
+	DefaultPrompt = "\x1b[34melasticsearch> \x1b[0m"
+	// GreenPrompt is used when the cluster status is green
+	GreenPrompt = "\x1b[32melasticsearch> \x1b[0m"
+	// YellowPrompt is used when the cluster status is yellow
+	YellowPrompt = "\x1b[33melasticsearch> \x1b[0m"
+	// RedPrompt is used when the cluster status is red
+	RedPrompt = "\x1b[31melasticsearch> \x1b[0m"
+)
+
+// clusterPrompts are used in interactive mode for different prompt colors
+var clusterPrompts = map[string]string{
+	"green":  GreenPrompt,
+	"yellow": YellowPrompt,
+	"red":    RedPrompt,
+}
 
 // Application contains the full application and its dependencies
 type Application struct {
@@ -92,17 +112,32 @@ func (app *Application) HandleCli(args []string) error {
 }
 
 func (app *Application) initInteractive() {
-	go app.refreshCompleter()
-	go app.poller.Start()
 	app.repl, _ = readline.NewEx(
 		&readline.Config{
-			Prompt:          "\x1b[34melasticsearch> \x1b[0m",
+			Prompt:          app.getClusterPrompt(),
 			InterruptPrompt: "^C",
 			EOFPrompt:       "exit",
 			AutoComplete:    cli.Completer,
 			HistoryFile:     "/tmp/elasticsearch-cli.history",
 		},
 	)
+	go app.refreshCompleter()
+	go app.poller.Start()
+}
+
+func (app *Application) getClusterPrompt() string {
+	res, err := app.client.HandleCall("GET", "/_cluster/health", "")
+	if err != nil {
+		return DefaultPrompt
+	}
+
+	var clusterHealth elasticsearch.Health
+	err = json.NewDecoder(res.Body).Decode(&clusterHealth)
+	if err != nil {
+		return DefaultPrompt
+	}
+
+	return clusterPrompts[clusterHealth.Status]
 }
 
 func (app *Application) refreshCompleter() {
@@ -122,6 +157,7 @@ func (app *Application) Interactive() error {
 	app.initInteractive()
 	defer app.poller.Stop()
 	for {
+		app.repl.Config.Prompt = app.getClusterPrompt()
 		line, err := app.repl.Readline()
 		if err == readline.ErrInterrupt {
 			if len(line) == 0 {

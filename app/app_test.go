@@ -415,3 +415,172 @@ func TestApplication_doSetCommands(t *testing.T) {
 		})
 	}
 }
+
+func TestApplication_getClusterPrompt(t *testing.T) {
+	type fields struct {
+		config       *Config
+		client       *client.HTTP
+		formatFunc   Formatter
+		output       io.Writer
+		indexChannel chan []string
+		parser       *cli.InputParser
+		poller       Poller
+		repl         *readline.Instance
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			"When the cluster is green, returns the redPrompt",
+			fields{
+				config: &Config{
+					Verbose:      false,
+					PollInterval: 10,
+				},
+				client: client.NewHTTP(defaultConfig, &mockCaller{
+					props: make(map[string]interface{}, 1),
+					content: `{
+						"cluster_name": "myCluster",
+						"status": "green",
+						"timed_out": false,
+						"number_of_nodes": 3,
+						"number_of_data_nodes": 2,
+						"active_primary_shards": 3,
+						"active_shards": 6,
+						"relocating_shards": 0,
+						"initializing_shards": 0,
+						"unassigned_shards": 0,
+						"delayed_unassigned_shards": 0,
+						"number_of_pending_tasks": 0,
+						"number_of_in_flight_fetch": 0,
+						"task_max_waiting_in_queue_millis": 0,
+						"active_shards_percent_as_number": 100.0
+					  }`,
+				}),
+				repl:       &readline.Instance{},
+				formatFunc: cli.Format,
+				output:     &bytes.Buffer{},
+			},
+			GreenPrompt,
+		},
+		{
+			"When the cluster is yellow, returns the redPrompt",
+			fields{
+				config: &Config{
+					Verbose:      false,
+					PollInterval: 10,
+				},
+				client: client.NewHTTP(defaultConfig, &mockCaller{
+					props: make(map[string]interface{}, 1),
+					content: `{
+						"cluster_name": "myCluster",
+						"status": "yellow",
+						"timed_out": false,
+						"number_of_nodes": 3,
+						"number_of_data_nodes": 2,
+						"active_primary_shards": 3,
+						"active_shards": 6,
+						"relocating_shards": 0,
+						"initializing_shards": 0,
+						"unassigned_shards": 0,
+						"delayed_unassigned_shards": 0,
+						"number_of_pending_tasks": 0,
+						"number_of_in_flight_fetch": 0,
+						"task_max_waiting_in_queue_millis": 0,
+						"active_shards_percent_as_number": 100.0
+					  }`,
+				}),
+				repl:       &readline.Instance{},
+				formatFunc: cli.Format,
+				output:     &bytes.Buffer{},
+			},
+			YellowPrompt,
+		},
+		{
+			"When the cluster is red, returns the redPrompt",
+			fields{
+				config: &Config{
+					Verbose:      false,
+					PollInterval: 10,
+				},
+				client: client.NewHTTP(defaultConfig, &mockCaller{
+					props: make(map[string]interface{}, 1),
+					content: `{
+						"cluster_name": "myCluster",
+						"status": "red",
+						"timed_out": false,
+						"number_of_nodes": 3,
+						"number_of_data_nodes": 2,
+						"active_primary_shards": 3,
+						"active_shards": 6,
+						"relocating_shards": 0,
+						"initializing_shards": 0,
+						"unassigned_shards": 0,
+						"delayed_unassigned_shards": 0,
+						"number_of_pending_tasks": 0,
+						"number_of_in_flight_fetch": 0,
+						"task_max_waiting_in_queue_millis": 0,
+						"active_shards_percent_as_number": 100.0
+					  }`,
+				}),
+				repl:       &readline.Instance{},
+				formatFunc: cli.Format,
+				output:     &bytes.Buffer{},
+			},
+			RedPrompt,
+		},
+		{
+			"When the request returns an unparsable body, returns the defaultPrompt",
+			fields{
+				config: &Config{
+					Verbose:      false,
+					PollInterval: 10,
+				},
+				client: client.NewHTTP(defaultConfig, &mockCaller{
+					props:   make(map[string]interface{}, 1),
+					content: `{"cluster_name": ,,,"myCluster",}`,
+				}),
+				repl:       &readline.Instance{},
+				formatFunc: cli.Format,
+				output:     &bytes.Buffer{},
+			},
+			DefaultPrompt,
+		},
+		{
+			"When the request returns an error, returns the defaultPrompt",
+			fields{
+				config: &Config{
+					Verbose:      false,
+					PollInterval: 10,
+				},
+				client: client.NewHTTP(defaultConfig, &mockCaller{
+					props: make(map[string]interface{}, 1),
+					fail:  true,
+				}),
+				repl:       &readline.Instance{},
+				formatFunc: cli.Format,
+				output:     &bytes.Buffer{},
+			},
+			DefaultPrompt,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := &Application{
+				config:       tt.fields.config,
+				client:       tt.fields.client,
+				formatFunc:   tt.fields.formatFunc,
+				output:       tt.fields.output,
+				indexChannel: tt.fields.indexChannel,
+				parser:       tt.fields.parser,
+				poller:       tt.fields.poller,
+				repl:         tt.fields.repl,
+			}
+			if got := app.getClusterPrompt(); got != tt.want {
+				t.Errorf("Application.getClusterPrompt() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
