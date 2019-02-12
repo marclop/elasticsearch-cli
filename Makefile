@@ -1,5 +1,4 @@
 SHELL := /bin/bash
-GLIDE_PRESENT := $(shell command -v glide 2> /dev/null)
 BINARY := elasticsearch-cli
 AUTHOR = marclop
 VERSION ?= 0.2.0
@@ -16,6 +15,7 @@ BUILD_OUTPUT ?= "pkg/{{.Dir}}_{{.OS}}_{{.Arch}}"
 REPORT_PATH ?= reports
 REPORT_FORMAT ?= html
 COMPLETIONS_FILE ?= $(HOME)/.$(BINARY).auto
+export GO111MODULE=on
 define HELP
 
 $(BINARY) v$(VERSION) Makefile
@@ -25,7 +25,7 @@ $(BINARY) v$(VERSION) Makefile
 
 - build:                  It will cross build $(BINARY) for $(BUILD_PLATFORMS).
 - install:                It will install $(BINARY) in the current system (by default in $(INSTALL_PATH)/$(BINARY)).
-- deps:                   It will install Glide and Gox in the system.
+- deps:                   It will install golint and gox.
 
 ## Development targets
 
@@ -52,16 +52,13 @@ help:
 
 .PHONY: deps
 deps:
-ifndef GLIDE_PRESENT
-	@ curl -sL https://glide.sh/get | bash
-endif
 	@ go get -u github.com/golang/lint/golint
 	@ go get -u github.com/mitchellh/gox
 
 .PHONY: vendor
 vendor: deps
 	@ echo "-> Installing $(BINARY) dependencies..."
-	@ glide install
+	@ go get
 
 .PHONY: docker-build
 docker-build:
@@ -117,7 +114,7 @@ test: lint unit acceptance
 unit:
 	@ echo "-> Running unit tests for $(BINARY)..."
 	@ echo "" > coverage.txt
-	@ for d in $(shell glide nv); do \
+	@ for d in $(shell go list ./...); do \
 			go test -race -coverprofile=coverage.txt -covermode=atomic $$d; \
 			if [ -f profile.out ]; then \
 				cat profile.out >> coverage.txt ; \
@@ -131,7 +128,7 @@ acceptance: _set_build_current_arch build
 
 .PHONY: lint
 lint: deps
-	@ golint -set_exit_status $(shell glide nv)
+	@ golint -set_exit_status $(shell go list ./...)
 
 .PHONY: acc
 acc: start_elasticsearch_docker
@@ -149,9 +146,8 @@ start_elasticsearch_docker:
 .PHONY: code-quality
 code-quality:
 	@ go get -u github.com/wgliang/goreporter
-	@ rm -rf .glide
 	@ mkdir -p $(REPORT_PATH)
-	@ goreporter -p ../$(shell basename $(PWD)) -r $(REPORT_PATH) -f $(REPORT_FORMAT) -e ".glide,vendor"
+	@ goreporter -p ../$(shell basename $(PWD)) -r $(REPORT_PATH) -f $(REPORT_FORMAT)
 	@ $$(open $$(make get-quality-report))
 
 .PHONY: get-quality-report
