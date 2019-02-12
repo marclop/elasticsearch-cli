@@ -9,37 +9,36 @@ import (
 	"github.com/marclop/elasticsearch-cli/utils"
 )
 
-// HTTPCallerInterface is the HTTP implementation for caller
-type HTTPCallerInterface interface {
-	Do(*http.Request) (*http.Response, error)
-}
-
 // HTTP Wraps an http.Client with its config
 type HTTP struct {
 	Config *Config
-	caller HTTPCallerInterface
+	caller *http.Client
 }
 
 // NewHTTP is the factory function for HTTP
-func NewHTTP(config *Config, client HTTPCallerInterface) *HTTP {
-	if client == nil {
-		transport := http.DefaultTransport.(*http.Transport)
-		if transport.TLSClientConfig == nil {
-			transport.TLSClientConfig = &tls.Config{
-				InsecureSkipVerify: config.insecure,
-			}
-		} else {
-			transport.TLSClientConfig.InsecureSkipVerify = config.insecure
+func NewHTTP(config *Config, client *http.Client) *HTTP {
+	if client != nil {
+		return &HTTP{
+			Config: config,
+			caller: client,
 		}
-		client = &http.Client{
-			Timeout:   config.Timeout,
-			Transport: transport,
+	}
+
+	transport := http.DefaultTransport.(*http.Transport)
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: config.insecure,
 		}
+	} else {
+		transport.TLSClientConfig.InsecureSkipVerify = config.insecure
 	}
 
 	return &HTTP{
 		Config: config,
-		caller: client,
+		caller: &http.Client{
+			Timeout:   config.Timeout,
+			Transport: transport,
+		},
 	}
 }
 

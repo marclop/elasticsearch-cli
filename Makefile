@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 BINARY := elasticsearch-cli
 AUTHOR = marclop
-VERSION ?= 0.2.0
+VERSION ?= 0.3.0
 INSTALL_PATH ?= $(GOPATH)/bin
 # Test all major version of ES
 ES_VERSION ?= 1.7 2.4 5.4 5.5 5.6
@@ -133,7 +133,7 @@ lint: deps
 .PHONY: acc
 acc: start_elasticsearch_docker
 	@ echo "-> Running acceptance tests for $(BINARY) in Elasticsearch $(ES_VERSION)..."
-	@ go test -tags acceptance . || (echo "-> Killing Docker container $$( docker kill $(ES_CONTAINER_NAME)_$(ES_VERSION) )" && exit 1) \
+	@ go test -tags acceptance -count 1 . || (echo "-> Killing Docker container $$( docker kill $(ES_CONTAINER_NAME)_$(ES_VERSION) )" && exit 1) \
 	&& (echo "-> Killing Docker container $$(docker kill $(ES_CONTAINER_NAME)_$(ES_VERSION))")
 
 .PHONY: start_elasticsearch_docker

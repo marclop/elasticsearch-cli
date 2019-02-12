@@ -2,13 +2,11 @@ package app
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/chzyer/readline"
@@ -16,34 +14,6 @@ import (
 	"github.com/marclop/elasticsearch-cli/client"
 	"github.com/marclop/elasticsearch-cli/poller"
 )
-
-type mockCaller struct {
-	content string
-	fail    bool
-	header  http.Header
-	props   map[string]interface{}
-}
-
-func (c *mockCaller) Do(*http.Request) (*http.Response, error) {
-	var err error
-	if c.fail {
-		err = fmt.Errorf("fail")
-	}
-
-	return &http.Response{
-		Header: c.header,
-		Body:   ioutil.NopCloser(strings.NewReader(c.content)),
-		Request: &http.Request{
-			Method: "GET",
-			Header: http.Header{
-				"Content-Type": []string{"application/json"},
-			},
-			URL: &url.URL{
-				Path: "/",
-			},
-		},
-	}, err
-}
 
 var defaultConfig = func(c *client.Config, _ error) *client.Config { return c }(
 	client.NewClientConfig("http://localhost", 9200, "user", "pass", 10, false),
@@ -70,7 +40,7 @@ func TestInitialize(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client.NewHTTP(defaultConfig, &mockCaller{}),
+				client.NewHTTP(defaultConfig, client.NewMock()),
 				nil,
 				channel,
 				&poller.IndexPoller{},
@@ -80,7 +50,7 @@ func TestInitialize(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client:       client.NewHTTP(defaultConfig, &mockCaller{}),
+				client:       client.NewHTTP(defaultConfig, client.NewMock()),
 				indexChannel: channel,
 				poller:       &poller.IndexPoller{},
 				formatFunc:   nil,
@@ -123,13 +93,14 @@ func TestApplication_HandleCli(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					content: `{"health": "yellow", "status": "open", "index": "elastic", "pri": "1"}`,
-					fail:    false,
-					header: http.Header{
-						"Content-Type": []string{"application/json"},
-					},
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock(
+					client.MockResponse{Response: http.Response{
+						StatusCode: 200,
+						Request:    &http.Request{Method: "GET"},
+						Body:       client.NewStringBody(`{"health": "yellow", "status": "open", "index": "elastic", "pri": "1"}`),
+						Header:     http.Header{"Content-Type": []string{"application/json"}},
+					}},
+				)),
 				format: cli.Format,
 				output: &bytes.Buffer{},
 			},
@@ -149,13 +120,20 @@ func TestApplication_HandleCli(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					content: `{"health": "yellow", "status": "open", "index": "elastic", "pri": "1"}`,
-					fail:    false,
-					header: http.Header{
-						"Content-Type": []string{"application/json"},
-					},
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock(
+					client.MockResponse{Response: http.Response{
+						StatusCode: 200,
+						Request:    &http.Request{Method: "GET", URL: new(url.URL)},
+						Body:       client.NewStringBody(`{"health": "yellow", "status": "open", "index": "elastic", "pri": "1"}`),
+						Header:     http.Header{"Content-Type": []string{"application/json"}},
+					}},
+					client.MockResponse{Response: http.Response{
+						StatusCode: 200,
+						Request:    &http.Request{Method: "GET", URL: new(url.URL)},
+						Body:       client.NewStringBody(`{"health": "yellow", "status": "open", "index": "elastic", "pri": "1"}`),
+						Header:     http.Header{"Content-Type": []string{"application/json"}},
+					}},
+				)),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -176,13 +154,9 @@ func TestApplication_HandleCli(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					content: `{"health": "yellow", "status": "open", "index": "elastic", "pri": "1"}`,
-					fail:    true,
-					header: http.Header{
-						"Content-Type": []string{"application/json"},
-					},
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock(
+					client.MockResponse{Error: errors.New("someerror")},
+				)),
 				format: cli.Format,
 				output: &bytes.Buffer{},
 			},
@@ -241,9 +215,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					props: make(map[string]interface{}, 1),
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock()),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -255,11 +227,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					"http://localhost",
 				},
 			},
-			client.NewHTTP(defaultConfig, &mockCaller{
-				props: map[string]interface{}{
-					"host": "http://localhost",
-				},
-			}),
+			client.NewHTTP(defaultConfig, client.NewMock()),
 		},
 		{
 			"host is not modified due invalid schema",
@@ -268,9 +236,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					props: make(map[string]interface{}, 1),
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock()),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -282,11 +248,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					"INVALID://localhost",
 				},
 			},
-			client.NewHTTP(defaultConfig, &mockCaller{
-				props: map[string]interface{}{
-					"host": "INVALID://localhost",
-				},
-			}),
+			client.NewHTTP(defaultConfig, client.NewMock()),
 		},
 		{
 			"port is modified",
@@ -295,9 +257,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					props: make(map[string]interface{}, 1),
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock()),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -309,11 +269,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					"9201",
 				},
 			},
-			client.NewHTTP(defaultConfig, &mockCaller{
-				props: map[string]interface{}{
-					"port": 9201,
-				},
-			}),
+			client.NewHTTP(defaultConfig, client.NewMock()),
 		},
 		{
 			"user is modified",
@@ -322,9 +278,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					props: make(map[string]interface{}, 1),
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock()),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -336,11 +290,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					"elastic",
 				},
 			},
-			client.NewHTTP(defaultConfig, &mockCaller{
-				props: map[string]interface{}{
-					"user": "elastic",
-				},
-			}),
+			client.NewHTTP(defaultConfig, client.NewMock()),
 		},
 		{
 			"password is modified",
@@ -349,9 +299,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					props: make(map[string]interface{}, 1),
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock()),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -363,11 +311,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					"elastic",
 				},
 			},
-			client.NewHTTP(defaultConfig, &mockCaller{
-				props: map[string]interface{}{
-					"pass": "elastic",
-				},
-			}),
+			client.NewHTTP(defaultConfig, client.NewMock()),
 		},
 		{
 			"Verbose is modified",
@@ -376,9 +320,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					props: make(map[string]interface{}, 1),
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock()),
 				repl:   &readline.Instance{},
 				format: cli.Format,
 				output: &bytes.Buffer{},
@@ -389,11 +331,7 @@ func TestApplication_doSetCommands(t *testing.T) {
 					"verbose",
 				},
 			},
-			client.NewHTTP(defaultConfig, &mockCaller{
-				props: map[string]interface{}{
-					"verbose": "elastic",
-				},
-			}),
+			client.NewHTTP(defaultConfig, client.NewMock()),
 		},
 	}
 	for _, tt := range tests {
@@ -433,32 +371,36 @@ func TestApplication_getClusterPrompt(t *testing.T) {
 		want   string
 	}{
 		{
-			"When the cluster is green, returns the redPrompt",
+			"When the cluster is green, returns the greenPrompt",
 			fields{
 				config: &Config{
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					props: make(map[string]interface{}, 1),
-					content: `{
-						"cluster_name": "myCluster",
-						"status": "green",
-						"timed_out": false,
-						"number_of_nodes": 3,
-						"number_of_data_nodes": 2,
-						"active_primary_shards": 3,
-						"active_shards": 6,
-						"relocating_shards": 0,
-						"initializing_shards": 0,
-						"unassigned_shards": 0,
-						"delayed_unassigned_shards": 0,
-						"number_of_pending_tasks": 0,
-						"number_of_in_flight_fetch": 0,
-						"task_max_waiting_in_queue_millis": 0,
-						"active_shards_percent_as_number": 100.0
-					  }`,
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock(
+					client.MockResponse{Response: http.Response{
+						StatusCode: 200,
+						Request:    &http.Request{Method: "GET"},
+						Body: client.NewStringBody(`{
+							"cluster_name": "myCluster",
+							"status": "green",
+							"timed_out": false,
+							"number_of_nodes": 3,
+							"number_of_data_nodes": 2,
+							"active_primary_shards": 3,
+							"active_shards": 6,
+							"relocating_shards": 0,
+							"initializing_shards": 0,
+							"unassigned_shards": 0,
+							"delayed_unassigned_shards": 0,
+							"number_of_pending_tasks": 0,
+							"number_of_in_flight_fetch": 0,
+							"task_max_waiting_in_queue_millis": 0,
+							"active_shards_percent_as_number": 100.0
+						  }`),
+						Header: http.Header{"Content-Type": []string{"application/json"}},
+					}},
+				)),
 				repl:       &readline.Instance{},
 				formatFunc: cli.Format,
 				output:     &bytes.Buffer{},
@@ -466,32 +408,36 @@ func TestApplication_getClusterPrompt(t *testing.T) {
 			GreenPrompt,
 		},
 		{
-			"When the cluster is yellow, returns the redPrompt",
+			"When the cluster is yellow, returns the yellowPrompt",
 			fields{
 				config: &Config{
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					props: make(map[string]interface{}, 1),
-					content: `{
-						"cluster_name": "myCluster",
-						"status": "yellow",
-						"timed_out": false,
-						"number_of_nodes": 3,
-						"number_of_data_nodes": 2,
-						"active_primary_shards": 3,
-						"active_shards": 6,
-						"relocating_shards": 0,
-						"initializing_shards": 0,
-						"unassigned_shards": 0,
-						"delayed_unassigned_shards": 0,
-						"number_of_pending_tasks": 0,
-						"number_of_in_flight_fetch": 0,
-						"task_max_waiting_in_queue_millis": 0,
-						"active_shards_percent_as_number": 100.0
-					  }`,
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock(
+					client.MockResponse{Response: http.Response{
+						StatusCode: 200,
+						Request:    &http.Request{Method: "GET"},
+						Body: client.NewStringBody(`{
+							"cluster_name": "myCluster",
+							"status": "yellow",
+							"timed_out": false,
+							"number_of_nodes": 3,
+							"number_of_data_nodes": 2,
+							"active_primary_shards": 3,
+							"active_shards": 6,
+							"relocating_shards": 0,
+							"initializing_shards": 0,
+							"unassigned_shards": 0,
+							"delayed_unassigned_shards": 0,
+							"number_of_pending_tasks": 0,
+							"number_of_in_flight_fetch": 0,
+							"task_max_waiting_in_queue_millis": 0,
+							"active_shards_percent_as_number": 100.0
+						  }`),
+						Header: http.Header{"Content-Type": []string{"application/json"}},
+					}},
+				)),
 				repl:       &readline.Instance{},
 				formatFunc: cli.Format,
 				output:     &bytes.Buffer{},
@@ -505,26 +451,30 @@ func TestApplication_getClusterPrompt(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					props: make(map[string]interface{}, 1),
-					content: `{
-						"cluster_name": "myCluster",
-						"status": "red",
-						"timed_out": false,
-						"number_of_nodes": 3,
-						"number_of_data_nodes": 2,
-						"active_primary_shards": 3,
-						"active_shards": 6,
-						"relocating_shards": 0,
-						"initializing_shards": 0,
-						"unassigned_shards": 0,
-						"delayed_unassigned_shards": 0,
-						"number_of_pending_tasks": 0,
-						"number_of_in_flight_fetch": 0,
-						"task_max_waiting_in_queue_millis": 0,
-						"active_shards_percent_as_number": 100.0
-					  }`,
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock(
+					client.MockResponse{Response: http.Response{
+						StatusCode: 200,
+						Request:    &http.Request{Method: "GET"},
+						Body: client.NewStringBody(`{
+							"cluster_name": "myCluster",
+							"status": "red",
+							"timed_out": false,
+							"number_of_nodes": 3,
+							"number_of_data_nodes": 2,
+							"active_primary_shards": 3,
+							"active_shards": 6,
+							"relocating_shards": 0,
+							"initializing_shards": 0,
+							"unassigned_shards": 0,
+							"delayed_unassigned_shards": 0,
+							"number_of_pending_tasks": 0,
+							"number_of_in_flight_fetch": 0,
+							"task_max_waiting_in_queue_millis": 0,
+							"active_shards_percent_as_number": 100.0
+						  }`),
+						Header: http.Header{"Content-Type": []string{"application/json"}},
+					}},
+				)),
 				repl:       &readline.Instance{},
 				formatFunc: cli.Format,
 				output:     &bytes.Buffer{},
@@ -538,10 +488,14 @@ func TestApplication_getClusterPrompt(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					props:   make(map[string]interface{}, 1),
-					content: `{"cluster_name": ,,,"myCluster",}`,
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock(
+					client.MockResponse{Response: http.Response{
+						StatusCode: 200,
+						Request:    &http.Request{Method: "GET"},
+						Body:       client.NewStringBody(`{"cluster_name": ,,,"myCluster",}`),
+						Header:     http.Header{"Content-Type": []string{"application/json"}},
+					}},
+				)),
 				repl:       &readline.Instance{},
 				formatFunc: cli.Format,
 				output:     &bytes.Buffer{},
@@ -555,10 +509,9 @@ func TestApplication_getClusterPrompt(t *testing.T) {
 					Verbose:      false,
 					PollInterval: 10,
 				},
-				client: client.NewHTTP(defaultConfig, &mockCaller{
-					props: make(map[string]interface{}, 1),
-					fail:  true,
-				}),
+				client: client.NewHTTP(defaultConfig, client.NewMock(
+					client.MockResponse{Error: errors.New("someerror")},
+				)),
 				repl:       &readline.Instance{},
 				formatFunc: cli.Format,
 				output:     &bytes.Buffer{},
