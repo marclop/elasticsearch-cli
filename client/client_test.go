@@ -11,17 +11,10 @@ import (
 	"github.com/marclop/elasticsearch-cli/utils"
 )
 
-type emptyMockCaller struct{}
-
-func (c *emptyMockCaller) Do(*http.Request) (*http.Response, error) {
-	var err error
-	return &http.Response{}, err
-}
-
 func TestNewClient(t *testing.T) {
 	type args struct {
 		config *Config
-		client HTTPCallerInterface
+		client *http.Client
 	}
 	tests := []struct {
 		name string
@@ -32,11 +25,11 @@ func TestNewClient(t *testing.T) {
 			"NewClientHasMockClientInjected",
 			args{
 				config: &Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
-				client: &emptyMockCaller{},
+				client: &http.Client{},
 			},
 			NewHTTP(
 				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
-				&emptyMockCaller{},
+				&http.Client{},
 			),
 		},
 		{
@@ -63,7 +56,7 @@ func TestNewClient(t *testing.T) {
 func TestClient_HandleCall(t *testing.T) {
 	type fields struct {
 		config *Config
-		caller HTTPCallerInterface
+		caller *http.Client
 	}
 	type args struct {
 		method string
@@ -81,7 +74,9 @@ func TestClient_HandleCall(t *testing.T) {
 			"HandleCallHTTPByEmptyMockCaller",
 			fields{
 				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
-				&emptyMockCaller{},
+				NewMock(MockResponse{
+					Response: http.Response{},
+				}),
 			},
 			args{
 				"GET",
@@ -95,7 +90,9 @@ func TestClient_HandleCall(t *testing.T) {
 			"HandleCallHTTPSByEmptyMockCaller",
 			fields{
 				&Config{&hostPort{"https://localhost", 9200}, "", "", time.Duration(10), nil, false},
-				&emptyMockCaller{},
+				NewMock(MockResponse{
+					Response: http.Response{},
+				}),
 			},
 			args{
 				"GET",
@@ -109,7 +106,9 @@ func TestClient_HandleCall(t *testing.T) {
 			"HandleCallWithBodyByEmptyMockCaller",
 			fields{
 				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
-				&emptyMockCaller{},
+				NewMock(MockResponse{
+					Response: http.Response{},
+				}),
 			},
 			args{
 				"GET",
@@ -123,7 +122,9 @@ func TestClient_HandleCall(t *testing.T) {
 			"HandleCallWithHeadersByEmptyMockCaller",
 			fields{
 				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), map[string]string{"Content-Type": "application/json"}, false},
-				&emptyMockCaller{},
+				NewMock(MockResponse{
+					Response: http.Response{},
+				}),
 			},
 			args{
 				"GET",
@@ -137,7 +138,9 @@ func TestClient_HandleCall(t *testing.T) {
 			"HandleCallWithAuthAndHeadersByEmptyMockCaller",
 			fields{
 				&Config{&hostPort{"http://localhost", 9200}, "marc", "marc", time.Duration(10), map[string]string{"Content-Type": "application/json"}, false},
-				&emptyMockCaller{},
+				NewMock(MockResponse{
+					Response: http.Response{},
+				}),
 			},
 			args{
 				"GET",
@@ -151,7 +154,9 @@ func TestClient_HandleCall(t *testing.T) {
 			"HandleCallWithInvalidMethodByEmptyMockCaller",
 			fields{
 				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
-				&emptyMockCaller{},
+				NewMock(MockResponse{
+					Response: http.Response{},
+				}),
 			},
 			args{
 				"   ",
@@ -183,7 +188,7 @@ func TestClient_HandleCall(t *testing.T) {
 func TestClient_createRequest(t *testing.T) {
 	type fields struct {
 		config *Config
-		caller HTTPCallerInterface
+		caller *http.Client
 	}
 	type args struct {
 		method string
@@ -201,7 +206,7 @@ func TestClient_createRequest(t *testing.T) {
 			"createRequestWithCorrectMethod",
 			fields{
 				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
-				&emptyMockCaller{},
+				&http.Client{},
 			},
 			args{
 				"GET",
@@ -223,7 +228,7 @@ func TestClient_createRequest(t *testing.T) {
 			"createRequestWithIncorrectMethod",
 			fields{
 				&Config{&hostPort{"http://localhost", 9200}, "", "", time.Duration(10), nil, false},
-				&emptyMockCaller{},
+				&http.Client{},
 			},
 			args{
 				"INVALID METHOD",

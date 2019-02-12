@@ -72,7 +72,7 @@ func New(config *Config) (*Application, error) {
 		}
 	}
 
-	httpClient := client.NewHTTP(clientConfig, nil)
+	httpClient := client.NewHTTP(clientConfig, config.Client)
 	if err != nil {
 		return nil, err
 	}

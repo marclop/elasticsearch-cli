@@ -1,5 +1,9 @@
 package app
 
+import (
+	"net/http"
+)
+
 // Config for elasticsearch-cli Application
 type Config struct {
 	User         string `mapstructure:"user"`
@@ -11,4 +15,5 @@ type Config struct {
 	Timeout      int    `mapstructure:"timeout"`
 	Insecure     bool   `mapstructure:"insecure"`
 	Headers      map[string]string
+	Client       *http.Client
 }
