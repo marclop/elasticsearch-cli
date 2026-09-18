@@ -6,7 +6,7 @@
 
 ## Features
 
-* Cli interface, this is a one-off execution
+* CLI interface, this is a one-off execution
 * Interactive console-like execution
 * REPL autocompletion
 * Persistent history
@@ -51,7 +51,8 @@ Available Commands:
 Flags:
       --cluster string      config name, used to have multiple clusters configured in $HOME/.elasticsearch-cli/<env> (default "default")
   -h, --help                help for elasticsearch-cli
-      --host string         default elasticsearch URL (default "http://localhost")
+      --host string         default elasticsearch URL (Must include a transport. Default: "http://localhost")
+      --insecure            skip tls certificate verification (warning: use for testing or development onlu)
   -p, --pass string         password to use to authenticate (If not specified, will look for ES_PASS environment variable)
       --poll-interval int   interval on which to poll Elasticsearch to provide index autocompletion (default 10)
       --port int            default elasticsearch port to use (default 9200)
@@ -64,7 +65,7 @@ Use "elasticsearch-cli [command] --help" for more information about a command.
 
 ## Configuration Settings and Precedence
 
-In order for `elasticsearch-cli` to be able to comunicate with an Elasticsearch cluster, it needs to have a set of configuration parameters set, which could either be defined in a configuration file, using environment variables or at runtime or using the cli's global flags. The hirearchy is as follows listed from higher precedence to lower:
+In order for `elasticsearch-cli` to be able to communicate with an Elasticsearch cluster, it needs to have a set of configuration parameters set, which could either be defined in a configuration file, using environment variables or at runtime or using the cli's global flags. The hierarchy is as follows listed from higher precedence to lower:
 
 1. Command line flags (`--host`, `--user`, `--pass`, `--verbose`, etc).
 2. Environment variables.
@@ -94,7 +95,7 @@ Last but not least, you can override any of the settings using the CLI flags.
 elasticsearch-cli --config mycluster <COMMAND>
 ```
 
-## Multple configuration support
+## Multiple configuration support
 
 `elasticsearch-cli` supports the notion of having multiple cluster configuration files out of the box. It uses those to manage credentials and settings.
 By default it will use `$HOME/.elasticsearch-cli/default.<json|toml|yaml|hcl>`, but when the `--config` flag is specified, it will use the `--config` specified value as the file name inside `$HOME/.elasticsearch-cli`:
@@ -228,6 +229,49 @@ URL:          /
   "tagline": "You Know, for Search"
 }
 elasticsearch> exit
+```
+### Supplying a Body in Interactive Mode
+
+The body must live on a single line.
+
+```sh
+
+elasticsearch> POST /food/_search  { "query": { "match": { "message": { "query": "butter" } } } }
+Method:       POST
+URL:          /food/_search
+
+{
+  "took": 19,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 1,
+      "relation": "eq"
+    },
+    "max_score": 6.123936,
+    "hits": [
+      {
+        "_index": "food",
+        "_id": "25f8d114-0d45-4830-8276-7c2f025c0bd7",
+        "_score": 6.123936,
+        "_source": {
+          "timestamp": "2026-06-07 16:25:03-0400",
+          "tags": [
+            "bread"
+          ],
+          "message": "Peanut butter and jelly sandwiches"
+        }
+      }
+    ]
+  }
+}
+
 ```
 
 ### Change configuration
